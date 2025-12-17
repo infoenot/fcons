@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Фин-Ассистент</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        /* Light Theme (Default) - Neo Fintech Clean (Flat) */
+        --color-bg: #F0F2F5;
+        --color-bg-sec: #FFFFFF;
+        --color-border: #E2E8F0;
+        --color-border-focus: #3B82F6;
+        
+        --color-text: #111827;      /* Dark Slate */
+        --color-text-sec: #64748B;  /* Slate */
+        --color-text-tert: #94A3B8; /* Light Slate */
+        
+        --color-accent: #3B82F6;    /* Blue */
+        --color-accent-sec: #2563EB;
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-error: #EF4444;
+
+        /* Shadows - Light Theme: None (Flat Design) */
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-elevation-sm: none;
+        --shadow-elevation-md: none;
+        --shadow-elevation-lg: none;
+      }
+
+      .dark {
+        /* Dark Theme (Updated) - Matte Sage */
+        --color-bg: #1f1f1f;          /* Основной фон */
+        --color-bg-sec: #252525;      /* Цвет чата и подложек */
+        --color-border: #353535;      /* Цвет обводок */
+        --color-border-focus: #6b9b85;
+        
+        --color-text: #eaeaea;        /* Основной текст */
+        --color-text-sec: #8b8b8b;    /* Вспомогательный текст */
+        --color-text-tert: #555555;   /* Третичный текст (темнее вспомогательного) */
+        
+        --color-accent: #6b9b85;      /* Активный цвет (Sage Green) */
+        --color-accent-sec: #5a8270;  /* Hover state */
+        
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-error: #EF4444;
+
+        /* Shadows - Dark Theme: None (Flat Design) */
+        --shadow-sm: none;
+        --shadow-md: none;
+        --shadow-lg: none;
+        --shadow-elevation-sm: none;
+        --shadow-elevation-md: none;
+        --shadow-elevation-lg: none;
+      }
+
+      body { 
+        font-family: "Inter", sans-serif;
+        font-optical-sizing: auto;
+        background-color: var(--color-bg); 
+        color: var(--color-text);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      /* Hide scrollbar */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              fin: {
+                bg: 'var(--color-bg)',
+                bgSec: 'var(--color-bg-sec)',
+                surface: 'var(--color-bg-sec)',
+                card: 'var(--color-bg-sec)',
+                border: 'var(--color-border)',
+                borderFocus: 'var(--color-border-focus)',
+                
+                text: 'var(--color-text)',
+                textSec: 'var(--color-text-sec)',
+                textTert: 'var(--color-text-tert)',
+                
+                accent: 'var(--color-accent)',
+                accentSec: 'var(--color-accent-sec)',
+                success: 'var(--color-success)',
+                warning: 'var(--color-warning)',
+                error: 'var(--color-error)',
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['Inter', 'sans-serif'], 
+            },
+            borderRadius: {
+              'card': '20px',
+              'btn': '16px',
+              'input': '14px',
+            },
+            boxShadow: {
+              'sm': 'var(--shadow-sm)',
+              'md': 'var(--shadow-md)',
+              'lg': 'var(--shadow-lg)',
+              'elevation-sm': 'var(--shadow-elevation-sm)',
+              'elevation-md': 'var(--shadow-elevation-md)',
+              'elevation-lg': 'var(--shadow-elevation-lg)',
+            },
+          }
+        }
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "date-fns/": "https://esm.sh/date-fns@^4.1.0/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

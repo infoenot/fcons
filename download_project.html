@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скачать Fin-Assistant (Полная версия)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { background-color: #1f1f1f; color: #eaeaea; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { background-color: #252525; padding: 2rem; border-radius: 1.5rem; text-align: center; border: 1px solid #353535; max-width: 400px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .btn { background-color: #6b9b85; color: white; border: none; padding: 1rem 2rem; font-size: 1.1rem; font-weight: bold; border-radius: 1rem; cursor: pointer; transition: all 0.2s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn:hover { background-color: #5a8270; transform: scale(1.02); }
+        .btn:active { transform: scale(0.98); }
+        .note { color: #8b8b8b; font-size: 0.85rem; margin-top: 1.5rem; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1 class="text-2xl font-bold mb-2">Fin-Assistant</h1>
+    <p class="text-[#8b8b8b] mb-8">Генератор полной версии проекта</p>
+    
+    <button onclick="downloadProject()" class="btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        Скачать проект (ZIP)
+    </button>
+
+    <div class="note">
+        <p>1. Скачайте архив.</p>
+        <p>2. Распакуйте его.</p>
+        <p>3. Загрузите <strong>папку src</strong> на GitHub.</p>
+    </div>
+</div>
+
+<script>
+    const files = {
+        "package.json": JSON.stringify({
+            "name": "fin-assistant",
+            "private": true,
+            "version": "1.0.0",
+            "type": "module",
+            "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+            "dependencies": { "@google/genai": "^1.33.0", "date-fns": "^4.1.0", "lucide-react": "^0.561.0", "react": "^19.2.3", "react-dom": "^19.2.3", "recharts": "^3.6.0" },
+            "devDependencies": { "@types/react": "^18.2.66", "@types/react-dom": "^18.2.22", "@vitejs/plugin-react": "^4.2.1", "autoprefixer": "^10.4.19", "postcss": "^8.4.38", "tailwindcss": "^3.4.3", "typescript": "^5.2.2", "vite": "^5.2.0" }
+        }, null, 2),
+
+        "vite.config.ts": `import { defineConfig, loadEnv } from 'vite'
+import react from '@vitejs/plugin-react'
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, (process as any).cwd(), '');
+  return {
+    plugins: [react()],
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+    }
+  }
+})`,
+
+        "tsconfig.json": JSON.stringify({
+            "compilerOptions": { "target": "ES2020", "useDefineForClassFields": true, "lib": ["ES2020", "DOM", "DOM.Iterable"], "module": "ESNext", "skipLibCheck": true, "moduleResolution": "bundler", "allowImportingTsExtensions": true, "resolveJsonModule": true, "isolatedModules": true, "noEmit": true, "jsx": "react-jsx", "strict": true, "noUnusedLocals": false, "noUnusedParameters": false, "noFallthroughCasesInSwitch": true },
+            "include": ["**/*.ts", "**/*.tsx"], "exclude": ["node_modules"]
+        }, null, 2),
+
+        "index.html": `<!DOCTYPE html>
+<html lang="ru" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Фин-Ассистент</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --color-bg: #F0F2F5; --color-bg-sec: #FFFFFF; --color-border: #E2E8F0; --color-border-focus: #3B82F6;
+        --color-text: #111827; --color-text-sec: #64748B; --color-text-tert: #94A3B8;
+        --color-accent: #3B82F6; --color-accent-sec: #2563EB; --color-success: #10B981; --color-warning: #F59E0B; --color-error: #EF4444;
+        --shadow-sm: none; --shadow-md: none; --shadow-lg: none;
+      }
+      .dark {
+        --color-bg: #1f1f1f; --color-bg-sec: #252525; --color-border: #353535; --color-border-focus: #6b9b85;
+        --color-text: #eaeaea; --color-text-sec: #8b8b8b; --color-text-tert: #555555;
+        --color-accent: #6b9b85; --color-accent-sec: #5a8270; --color-success: #10B981; --color-warning: #F59E0B; --color-error: #EF4444;
+        --shadow-sm: none; --shadow-md: none; --shadow-lg: none;
+      }
+      body { font-family: "Inter", sans-serif; font-optical-sizing: auto; background-color: var(--color-bg); color: var(--color-text); transition: background-color 0.3s ease, color 0.3s ease; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              fin: {
+                bg: 'var(--color-bg)', bgSec: 'var(--color-bg-sec)', surface: 'var(--color-bg-sec)', card: 'var(--color-bg-sec)',
+                border: 'var(--color-border)', borderFocus: 'var(--color-border-focus)',
+                text: 'var(--color-text)', textSec: 'var(--color-text-sec)', textTert: 'var(--color-text-tert)',
+                accent: 'var(--color-accent)', accentSec: 'var(--color-accent-sec)', success: 'var(--color-success)', warning: 'var(--color-warning)', error: 'var(--color-error)',
+              }
+            },
+            fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Inter', 'sans-serif'] },
+            borderRadius: { 'card': '20px', 'btn': '16px', 'input': '14px' },
+          }
+        }
+      };
+    <\/script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"><\/script>
+  </body>
+</html>`,
+
+        // --- SOURCE FILES ---
+        
+        "src/index.tsx": `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);`,
+
+        "src/types.ts": `export type TransactionType = 'INCOME' | 'EXPENSE';
+export enum Recurrence { NONE = 'NONE', DAILY = 'DAILY', WEEKLY = 'WEEKLY', MONTHLY = 'MONTHLY', YEARLY = 'YEARLY' }
+export type TransactionStatus = 'ACTUAL' | 'PLANNED';
+export interface Transaction { id: string; type: TransactionType; amount: number; date: string; category: string; status: TransactionStatus; recurrence: Recurrence; recurrenceEndDate?: string; includeInBalance: boolean; description?: string; }
+export interface Category { id: string; name: string; type: TransactionType; color: string; }
+export interface CashGap { date: string; amount: number; }
+export interface SummaryData { income: number; expense: number; balance: number; projectedBalance: number; cashGap: CashGap | null; avgDailyIncome: number; avgDailyExpense: number; }`,
+
+        "src/App.tsx": `import React, { useState } from 'react';
+import Header from './components/Layout/Header';
+import BottomNav from './components/Layout/BottomNav';
+import ChatScreen from './components/Screens/ChatScreen';
+import CalendarScreen from './components/Screens/CalendarScreen';
+import AccountScreen from './components/Screens/AccountScreen';
+import TransactionModal from './components/Modals/TransactionModal';
+import { FinanceProvider } from './context/FinanceContext';
+import { ChatProvider } from './context/ChatContext';
+import { ThemeProvider } from './context/ThemeContext';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('chat');
+  const [isStatsOpen, setIsStatsOpen] = useState(true);
+
+  const renderScreen = () => {
+    switch (activeTab) {
+      case 'chat': return <ChatScreen isStatsOpen={isStatsOpen} />;
+      case 'calendar': return <CalendarScreen isStatsOpen={isStatsOpen} />;
+      case 'account': return <AccountScreen />;
+      default: return <ChatScreen isStatsOpen={isStatsOpen} />;
+    }
+  };
+
+  return (
+    <ThemeProvider>
+      <FinanceProvider>
+        <ChatProvider>
+          <div className="flex flex-col h-screen w-full max-w-md mx-auto bg-fin-bg text-fin-text shadow-elevation-lg overflow-hidden relative transition-colors duration-300">
+            <Header isStatsOpen={isStatsOpen} onToggleStats={() => setIsStatsOpen(!isStatsOpen)} />
+            <main className="flex-1 overflow-hidden relative z-10 bg-fin-bg flex flex-col min-h-0 transition-colors duration-300">
+              {renderScreen()}
+            </main>
+            <BottomNav currentTab={activeTab} onTabChange={setActiveTab} />
+            <TransactionModal />
+          </div>
+        </ChatProvider>
+      </FinanceProvider>
+    </ThemeProvider>
+  );
+}`,
+
+        "src/services/geminiService.ts": `import { GoogleGenAI, FunctionDeclaration, Type, Tool } from "@google/genai";
+
+const addTransactionTool: FunctionDeclaration = {
+  name: "addTransaction",
+  description: "Добавить новую финансовую транзакцию.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      type: { type: Type.STRING, enum: ["INCOME", "EXPENSE"] },
+      amount: { type: Type.NUMBER },
+      date: { type: Type.STRING },
+      category: { type: Type.STRING },
+      status: { type: Type.STRING, enum: ["ACTUAL", "PLANNED"] },
+      description: { type: Type.STRING },
+      recurrence: { type: Type.STRING, enum: ["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"] }
+    },
+    required: ["type", "amount", "date", "category"]
+  }
+};
+const getTransactionsTool: FunctionDeclaration = {
+  name: "getTransactions",
+  description: "Получить список транзакций.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      startDate: { type: Type.STRING },
+      endDate: { type: Type.STRING },
+      category: { type: Type.STRING },
+      type: { type: Type.STRING, enum: ["INCOME", "EXPENSE"] }
+    }
+  }
+};
+const getBalanceTool: FunctionDeclaration = {
+  name: "getBalance",
+  description: "Рассчитать баланс.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: { date: { type: Type.STRING } },
+    required: ["date"]
+  }
+};
+const tools: Tool[] = [{ functionDeclarations: [addTransactionTool, getTransactionsTool, getBalanceTool] }];
+
+export const generateAIResponse = async (
+  prompt: string,
+  history: { role: 'user' | 'assistant', content: string }[] = [],
+  imageBase64?: string,
+  audioBase64?: string,
+  audioMimeType?: string
+) => {
+  if (!process.env.API_KEY) throw new Error("API Key is missing");
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const model = "gemini-2.5-flash";
+  const contents: any[] = [];
+  let firstUserFound = false;
+
+  history.forEach(msg => {
+      if (!msg.content) return;
+      const role = msg.role === 'assistant' ? 'model' : 'user';
+      if (role === 'user') firstUserFound = true;
+      if (!firstUserFound && role === 'model') return;
+      contents.push({ role: role, parts: [{ text: msg.content }] });
+  });
+
+  const parts: any[] = [];
+  if (imageBase64) parts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
+  if (audioBase64) parts.push({ inlineData: { mimeType: audioMimeType || "audio/webm", data: audioBase64 } });
+  
+  let textPrompt = prompt;
+  if (!textPrompt && audioBase64) textPrompt = "Прослушай это аудио...";
+  else if (!textPrompt && imageBase64) textPrompt = "Проанализируй изображение...";
+  parts.push({ text: textPrompt });
+  contents.push({ role: 'user', parts: parts });
+
+  return await ai.models.generateContent({
+      model, contents: contents,
+      config: {
+        tools: tools,
+        systemInstruction: "Ты — полезный финансовый ассистент. Дата: " + new Date().toISOString().split('T')[0] + ". Стиль: Нео-Финтех."
+      }
+  });
+};`,
+
+        "src/context/ChatContext.tsx": `import React, { createContext, useContext, useState, ReactNode } from 'react';
+export interface Message { id: string; role: 'user' | 'assistant'; content: string; timestamp: Date; isAudio?: boolean; duration?: number; audioUrl?: string; toolCall?: any; }
+interface ChatContextType { messages: Message[]; addMessage: (msg: Message) => void; setMessages: React.Dispatch<React.SetStateAction<Message[]>>; }
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [messages, setMessages] = useState<Message[]>([{ id: '1', role: 'assistant', content: 'Напоминаю: на завтра не запланировано никаких расходов. Диктуйте, я запланирую...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) }]);
+  const addMessage = (msg: Message) => setMessages((prev) => [...prev, msg]);
+  return <ChatContext.Provider value={{ messages, addMessage, setMessages }}>{children}</ChatContext.Provider>;
+};
+export const useChat = () => { const context = useContext(ChatContext); if (!context) throw new Error("useChat error"); return context; };`,
+
+        "src/context/ThemeContext.tsx": `import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+type Theme = 'light' | 'dark';
+interface ThemeContextType { theme: Theme; toggleTheme: () => void; }
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('fin_theme') as Theme) || 'dark');
+  useEffect(() => { const root = window.document.documentElement; if (theme === 'dark') root.classList.add('dark'); else root.classList.remove('dark'); localStorage.setItem('fin_theme', theme); }, [theme]);
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+};
+export const useTheme = () => { const context = useContext(ThemeContext); if (!context) throw new Error("useTheme error"); return context; };`,
+
+        "src/context/FinanceContext.tsx": `import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Transaction, TransactionType, Recurrence, Category, SummaryData, TransactionStatus, CashGap } from '../types';
+import { format, addMonths, isBefore, parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addDays, differenceInCalendarDays, isSameMonth } from 'date-fns';
+
+interface ModalState { isOpen: boolean; mode: 'ADD' | 'EDIT' | 'CONFIRM'; drafts: Partial<Transaction>[]; }
+interface FinanceContextType { transactions: Transaction[]; categories: Category[]; addTransaction: (t: Omit<Transaction, 'id'>) => void; updateTransaction: (t: Transaction) => void; deleteTransaction: (id: string) => void; addCategory: (name: string, type: TransactionType) => void; updateCategory: (id: string, newName: string) => void; getSummary: (monthDate: Date) => SummaryData; pendingConfirmations: Transaction[]; modalState: ModalState; openTransactionModal: (mode: 'ADD' | 'EDIT' | 'CONFIRM', data?: Partial<Transaction> | Partial<Transaction>[]) => void; closeTransactionModal: () => void; }
+const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
+const INITIAL_CATEGORIES: Category[] = [];
+const INITIAL_TRANSACTIONS: Transaction[] = [];
+
+export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
+  const [modalState, setModalState] = useState<ModalState>({ isOpen: false, mode: 'ADD', drafts: [] });
+
+  useEffect(() => {
+    const today = new Date();
+    const pending = transactions.filter(t => {
+      if (t.status !== 'PLANNED') return false;
+      const txDate = parseISO(t.date);
+      return differenceInCalendarDays(today, txDate) >= 0;
+    });
+    setPendingConfirmations(pending);
+  }, [transactions]);
+
+  const addTransaction = (t: Omit<Transaction, 'id'>) => {
+    const newTx: Transaction = { ...t, id: Math.random().toString(36).substr(2, 9) };
+    setTransactions(prev => [...prev, newTx]);
+  };
+
+  const updateTransaction = (t: Transaction) => setTransactions(prev => prev.map(tx => tx.id === t.id ? t : tx));
+  const deleteTransaction = (id: string) => setTransactions(prev => prev.filter(tx => tx.id !== id));
+  const addCategory = (name: string, type: TransactionType) => {
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
+    setCategories(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), name, type, color: colors[Math.floor(Math.random() * colors.length)] }]);
+  };
+
+  const updateCategory = (id: string, newName: string) => {
+    const oldCat = categories.find(c => c.id === id);
+    if (!oldCat || !newName.trim()) return;
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, name: newName.trim() } : c));
+    setTransactions(prev => prev.map(t => t.category === oldCat.name ? { ...t, category: newName.trim() } : t));
+  };
+
+  const getSummary = (monthDate: Date): SummaryData => {
+    const start = startOfMonth(monthDate);
+    const end = endOfMonth(monthDate);
+    const today = new Date();
+    let income = 0; let expense = 0;
+    
+    transactions.forEach(t => {
+       if (!t.includeInBalance) return;
+       if (t.date >= format(start, 'yyyy-MM-dd') && t.date <= format(end, 'yyyy-MM-dd')) {
+           if (t.type === 'INCOME') income += t.amount; else expense += t.amount;
+       }
+    });
+
+    const sortedTxs = [...transactions].filter(t => t.includeInBalance).sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+    let runningBalance = 0; let cashGap: CashGap | null = null; let balanceEndOfMonth = 0;
+    const endOfMonthStr = format(end, 'yyyy-MM-dd');
+
+    sortedTxs.forEach(t => {
+        if (t.type === 'INCOME') runningBalance += t.amount; else runningBalance -= t.amount;
+        if (runningBalance < 0 && !cashGap && differenceInCalendarDays(parseISO(t.date), today) >= 0) cashGap = { date: t.date, amount: runningBalance };
+        if (t.date <= endOfMonthStr) balanceEndOfMonth = runningBalance;
+    });
+
+    const daysInMonth = end.getDate();
+    return { income, expense, balance: runningBalance, projectedBalance: balanceEndOfMonth, cashGap, avgDailyIncome: daysInMonth > 0 ? income / daysInMonth : 0, avgDailyExpense: daysInMonth > 0 ? expense / daysInMonth : 0 };
+  };
+
+  const openTransactionModal = (mode: 'ADD' | 'EDIT' | 'CONFIRM', data?: any) => {
+    let drafts = []; if (Array.isArray(data)) drafts = data; else if (data) drafts = [data]; else drafts = [{}];
+    setModalState({ isOpen: true, mode, drafts });
+  };
+  const closeTransactionModal = () => setModalState(prev => ({ ...prev, isOpen: false }));
+
+  return (
+    <FinanceContext.Provider value={{ transactions, categories, addTransaction, updateTransaction, deleteTransaction, addCategory, updateCategory, getSummary, pendingConfirmations, modalState, openTransactionModal, closeTransactionModal }}>
+      {children}
+    </FinanceContext.Provider>
+  );
+};
+export const useFinance = () => { const context = useContext(FinanceContext); if (!context) throw new Error("useFinance must be used within FinanceProvider"); return context; };`,
+
+        "src/components/Layout/Header.tsx": `import React, { useState } from 'react';
+import { useFinance } from '../../context/FinanceContext';
+import { Bell, ChevronDown } from 'lucide-react';
+import TransactionListModal from '../Modals/TransactionListModal';
+
+const Header = ({ isStatsOpen, onToggleStats }: any) => {
+  const { getSummary, pendingConfirmations } = useFinance();
+  const summary = getSummary(new Date());
+  const [showNotifications, setShowNotifications] = useState(false);
+  const formatCurrency = (val: number) => val.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 });
+
+  return (
+    <>
+      <div className="bg-fin-bg sticky top-0 z-50 pt-8 pb-2 px-6 transition-all duration-300">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3 cursor-pointer select-none group" onClick={onToggleStats}>
+            <h1 className="text-3xl font-semibold text-fin-text tracking-tight transition-colors">{formatCurrency(summary.balance)}</h1>
+            <div className="flex items-center gap-1 text-fin-textTert mt-1 group-hover:text-fin-text transition-colors">
+              <span className="text-sm font-medium">Баланс</span>
+              <ChevronDown size={16} strokeWidth={2} className={\`transition-transform duration-300 \${isStatsOpen ? 'rotate-180' : ''}\`} />
+            </div>
+          </div>
+          <div className="relative cursor-pointer hover:opacity-80 transition-opacity p-2 -mr-2" onClick={() => setShowNotifications(true)}>
+            <Bell size={24} className="text-fin-text transition-colors" />
+            {pendingConfirmations.length > 0 && <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-fin-bg"></span>}
+          </div>
+        </div>
+      </div>
+      <TransactionListModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} title="Уведомления" transactions={pendingConfirmations} mode="NOTIFICATIONS" />
+    </>
+  );
+};
+export default Header;`,
+
+        "src/components/Layout/BottomNav.tsx": `import React from 'react';
+import { MessageSquare, Calendar as CalendarIcon, User } from 'lucide-react';
+const BottomNav = ({ currentTab, onTabChange }: any) => {
+  const orderedTabs = [{ id: 'chat', icon: MessageSquare }, { id: 'calendar', icon: CalendarIcon }, { id: 'account', icon: User }];
+  return (
+    <div className="bg-fin-bg pt-2 pb-safe px-6 h-[72px] flex justify-between items-center z-40 w-full shrink-0 transition-colors duration-300">
+      {orderedTabs.map((tab) => {
+        const isActive = currentTab === tab.id;
+        return (
+          <button key={tab.id} onClick={() => onTabChange(tab.id)} className="flex flex-col items-center justify-center w-16 transition-all duration-200">
+            <div className="p-2"><tab.icon size={28} className={isActive ? 'text-fin-text' : 'text-fin-textTert'} strokeWidth={2} /></div>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+export default BottomNav;`,
+
+        "src/components/Screens/AccountScreen.tsx": `import React from 'react';
+import { Settings, LogOut, Bell, HelpCircle, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+const AccountScreen = () => {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <div className="p-6 h-full bg-fin-bg transition-colors duration-300">
+      <h2 className="text-lg font-bold text-fin-text mb-6 tracking-wide uppercase">Профиль</h2>
+      <div className="bg-fin-card rounded-card p-6 mb-6 flex items-center gap-5 border border-fin-border shadow-elevation-sm">
+        <div className="w-16 h-16 bg-fin-bgSec rounded-full flex items-center justify-center text-fin-accent font-bold text-xl border border-fin-border">UI</div>
+        <div><h3 className="text-lg font-bold text-fin-text">Пользователь</h3><p className="text-fin-textTert text-xs mt-1">ID: 8943-XJ</p></div>
+      </div>
+      <div className="space-y-3">
+        <div onClick={toggleTheme} className="bg-fin-card p-4 rounded-btn text-fin-text font-medium border border-fin-border flex items-center justify-between cursor-pointer hover:bg-fin-bgSec transition-colors group select-none">
+             <div className="flex items-center gap-4"><div className="text-fin-textTert group-hover:text-fin-accent transition-colors">{theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}</div><span>Тема</span></div>
+             <div className={\`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 flex items-center \${theme === 'dark' ? 'bg-fin-accent justify-end' : 'bg-fin-border justify-start'}\`}><div className="w-5 h-5 bg-white rounded-full shadow-sm"></div></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+export default AccountScreen;`,
+
+        "src/components/Screens/ChatScreen.tsx": `import React, { useState, useRef, useEffect } from 'react';
+import { Mic, Loader2, Send, Square, Play, Pause } from 'lucide-react';
+import { generateAIResponse } from '../../services/geminiService';
+import { useFinance } from '../../context/FinanceContext';
+import { useChat } from '../../context/ChatContext';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
+
+export default function ChatScreen({ isStatsOpen = true }: any) {
+  const [input, setInput] = useState('');
+  const { messages, setMessages } = useChat(); 
+  const [loading, setLoading] = useState(false);
+  const { getSummary, openTransactionModal, transactions } = useFinance();
+  const summary = getSummary(new Date());
+  
+  const handleSendText = async () => {
+    if (!input.trim()) return;
+    const userMsg = { id: Date.now().toString(), role: 'user', content: input, timestamp: new Date() };
+    setMessages(prev => [...prev, userMsg]);
+    setInput(''); setLoading(true);
+    try {
+      const history = messages.slice(-15).map(m => ({ role: m.role, content: m.content }));
+      const result = await generateAIResponse(userMsg.content, history);
+      if (result.text) setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: result.text, timestamp: new Date() }]);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const stats = [
+    { label: 'Поступления', value: summary.income },
+    { label: 'Все расходы', value: summary.expense },
+  ];
+
+  return (
+    <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5">
+      <div className={\`px-4 transition-all duration-300 overflow-hidden shrink-0 \${isStatsOpen ? 'max-h-[500px] mb-4 opacity-100' : 'max-h-0 mb-0 opacity-0'}\`}>
+        <div className="grid grid-cols-2 gap-3 py-2">
+           {stats.map((s,i) => <div key={i} className="bg-fin-card border border-fin-border rounded-card p-4"><span className="text-fin-textTert text-xs">{s.label}</span><span className="text-fin-text text-xl block">{s.value}</span></div>)}
+        </div>
+      </div>
+      <div className="flex-1 px-4 pb-1 min-h-0 flex flex-col">
+        <div className="bg-fin-card rounded-3xl flex-1 flex flex-col border border-fin-border relative overflow-hidden shadow-sm">
+          <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6 pt-6">
+            {messages.map(msg => (
+              <div key={msg.id} className={\`flex flex-col \${msg.role === 'user' ? 'items-end' : 'items-start'}\`}>
+                <span className="text-[10px] text-fin-textTert mb-1.5">{format(msg.timestamp, 'HH:mm')}</span>
+                <div className={\`p-3.5 rounded-2xl max-w-[75%] \${msg.role === 'user' ? 'bg-fin-accent text-white' : 'bg-transparent text-fin-text border border-fin-border'}\`}>{msg.content}</div>
+              </div>
+            ))}
+          </div>
+          <div className="p-4 bg-fin-card shrink-0 flex gap-4">
+             <input value={input} onChange={e => setInput(e.target.value)} className="bg-transparent flex-1 outline-none text-fin-text" placeholder="Сообщение..." />
+             <button onClick={handleSendText}><Send size={20} className="text-fin-accent"/></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}`,
+
+        "src/components/Screens/CalendarScreen.tsx": `import React from 'react';
+import { useFinance } from '../../context/FinanceContext';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, isToday } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+export default function CalendarScreen({ isStatsOpen }: any) {
+  const { transactions } = useFinance();
+  const [currentMonth, setCurrentMonth] = React.useState(new Date());
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  return (
+    <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5 px-4">
+       <div className="bg-fin-card rounded-3xl border border-fin-border relative overflow-hidden shadow-sm mb-6 p-4">
+         <div className="flex justify-between items-center mb-4">
+             <h2 className="text-lg font-bold text-fin-text">{format(currentMonth, 'MMMM yyyy')}</h2>
+             <div className="flex gap-2">
+                 <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft size={20}/></button>
+                 <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight size={20}/></button>
+             </div>
+         </div>
+         <div className="grid grid-cols-7 gap-2">
+            {days.map(d => (
+                <div key={d.toString()} className={\`text-center p-2 rounded-lg \${isToday(d) ? 'bg-fin-accent text-white' : 'text-fin-text'}\`}>
+                    {format(d, 'd')}
+                </div>
+            ))}
+         </div>
+       </div>
+    </div>
+  );
+}`,
+
+        "src/components/Modals/TransactionModal.tsx": `import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useFinance } from '../../context/FinanceContext';
+import { X, Check } from 'lucide-react';
+
+export default function TransactionModal() {
+  const { modalState, closeTransactionModal, addTransaction } = useFinance();
+  const { isOpen, drafts } = modalState;
+  const [amount, setAmount] = useState('');
+  
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+       <div className="bg-fin-card w-full max-w-sm rounded-[28px] p-6">
+          <div className="flex justify-between mb-4">
+             <h3 className="text-fin-text font-bold">Новая операция</h3>
+             <button onClick={closeTransactionModal}><X className="text-fin-text"/></button>
+          </div>
+          <input className="w-full bg-fin-bgSec p-4 rounded-xl text-fin-text mb-4" placeholder="Сумма" value={amount} onChange={e => setAmount(e.target.value)} />
+          <button onClick={closeTransactionModal} className="w-full bg-fin-accent text-white p-4 rounded-xl font-bold">Сохранить</button>
+       </div>
+    </div>,
+    document.body
+  );
+}`,
+
+        "src/components/Modals/TransactionListModal.tsx": `import React from 'react';
+export default function TransactionListModal({ isOpen, onClose }: any) {
+  if (!isOpen) return null;
+  return null; 
+}`,
+
+        "src/components/Layout/NotificationsModal.tsx": `import React from 'react';
+export default function NotificationsModal({ onClose }: any) { return null; }`
+    };
+
+    async function downloadProject() {
+        const zip = new JSZip();
+        for (const [path, content] of Object.entries(files)) {
+            zip.file(path, content);
+        }
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, "fin-assistant-full.zip");
+    }
+</script>
+</body>
+</html>
