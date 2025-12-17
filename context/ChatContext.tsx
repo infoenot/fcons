@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface Message {
   id: string;
@@ -20,18 +20,41 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: '1', 
-      role: 'assistant', 
-      content: 'Напоминаю: на завтра не запланировано никаких расходов. Диктуйте, я запланирую...',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
+  // Initialize from localStorage or default
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem('fin_chat_messages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // We need to convert string timestamps back to Date objects
+        return parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to parse chat messages", e);
     }
-  ]);
+
+    // Default message if nothing saved
+    return [
+      { 
+        id: '1', 
+        role: 'assistant', 
+        content: 'Напоминаю: на завтра не запланировано никаких расходов. Диктуйте, я запланирую...',
+        timestamp: new Date()
+      }
+    ];
+  });
 
   const addMessage = (msg: Message) => {
     setMessages((prev) => [...prev, msg]);
   };
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    localStorage.setItem('fin_chat_messages', JSON.stringify(messages));
+  }, [messages]);
 
   return (
     <ChatContext.Provider value={{ messages, addMessage, setMessages }}>

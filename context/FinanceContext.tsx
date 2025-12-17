@@ -27,14 +27,28 @@ interface FinanceContextType {
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
-// Start with NO categories as requested
-const INITIAL_CATEGORIES: Category[] = [];
-
-const INITIAL_TRANSACTIONS: Transaction[] = [];
-
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  // Initialize state from localStorage if available
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    try {
+      const saved = localStorage.getItem('fin_transactions');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load transactions", e);
+      return [];
+    }
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const saved = localStorage.getItem('fin_categories');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to load categories", e);
+      return [];
+    }
+  });
+
   const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
   
   const [modalState, setModalState] = useState<ModalState>({
@@ -42,6 +56,16 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     mode: 'ADD',
     drafts: []
   });
+
+  // Save to localStorage whenever transactions change
+  useEffect(() => {
+    localStorage.setItem('fin_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  // Save to localStorage whenever categories change
+  useEffect(() => {
+    localStorage.setItem('fin_categories', JSON.stringify(categories));
+  }, [categories]);
 
   // Check for past due planned transactions (Past + Today only)
   useEffect(() => {
