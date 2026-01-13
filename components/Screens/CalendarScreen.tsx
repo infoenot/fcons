@@ -84,6 +84,10 @@ const CalendarScreen: React.FC = () => {
     });
   }, [categories]);
 
+  const incomeCategories = sortedCategories.filter(c => c.type === 'INCOME');
+  const expenseCategories = sortedCategories.filter(c => c.type === 'EXPENSE');
+
+
   const isTransactionOnDate = (t: Transaction, date: Date) => {
     const tDate = parseISO(t.date);
     if (isSameDay(tDate, date)) return true;
@@ -248,43 +252,52 @@ const CalendarScreen: React.FC = () => {
 
         {/* CATEGORY BLOCKS */}
         <div className="px-1 mb-6">
-            <h3 className="text-lg font-semibold text-fin-text mb-4 tracking-wide px-1">Категории</h3>
-            
+            <h3 className="text-lg font-semibold text-fin-text mb-4 tracking-wide px-1">Доходы</h3>
             <div className="grid grid-cols-2 gap-3">
-                {sortedCategories.map(cat => {
+                {incomeCategories.map(cat => {
                     const total = getCategoryTotal(cat.name);
-                    const isIncome = cat.type === 'INCOME';
                     return (
                         <div 
                             key={cat.id} 
                             onClick={() => openCategoryDetails(cat)}
-                            className={`rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border ${
-                                isIncome 
-                                ? 'bg-fin-bgSec border-fin-border hover:brightness-105 dark:bg-[#333131] dark:border-[#3c3c3c]' 
-                                : 'bg-fin-card border-fin-border'
-                            }`}
+                            className="bg-fin-bgSec border-fin-border hover:brightness-105 dark:bg-[#333131] dark:border-[#3c3c3c] rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
                         >
                             <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                             <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
-                                {cat.type === 'EXPENSE' && total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
+                                {total.toLocaleString('ru-RU')} ₽
                             </span>
                         </div>
                     );
                 })}
+            </div>
 
-                <button 
-                onClick={() => setIsAddCategoryOpen(true)}
-                className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-[#252525] dark:border-[#353535] dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
-                >
-                    <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
-                        <Plus size={24} />
-                    </div>
+            <h3 className="text-lg font-semibold text-fin-text mt-6 mb-4 tracking-wide px-1">Расходы</h3>
+            <div className="grid grid-cols-2 gap-3">
+                 {expenseCategories.map(cat => {
+                    const total = getCategoryTotal(cat.name);
+                    return (
+                        <div 
+                            key={cat.id} 
+                            onClick={() => openCategoryDetails(cat)}
+                            className="bg-fin-card border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
+                        >
+                            <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                            <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
+                                {total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
+                            </span>
+                        </div>
+                    );
+                })}
+                 <button 
+                    onClick={() => setIsAddCategoryOpen(true)}
+                    className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-[#252525] dark:border-[#353535] dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
+                    >
+                        <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
+                            <Plus size={24} />
+                        </div>
                 </button>
             </div>
         </div>
-
-        {/* BALANCE CHART BLOCK REMOVED */}
-
       </div>
 
       <TransactionListModal 

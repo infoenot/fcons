@@ -1,9 +1,18 @@
 import React from 'react';
-import { Settings, LogOut, Bell, HelpCircle, Moon, Sun } from 'lucide-react';
+import { Settings, LogOut, Bell, HelpCircle, Moon, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 const AccountScreen: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+
+  const handleClearData = () => {
+    if (confirm('Вы уверены, что хотите удалить все данные? Это действие необратимо.')) {
+      localStorage.removeItem('fin_transactions');
+      localStorage.removeItem('fin_categories');
+      localStorage.removeItem('fin_chat_messages');
+      window.location.reload();
+    }
+  };
 
   return (
     <div className="p-6 h-full bg-fin-bg transition-colors duration-300">
@@ -54,7 +63,17 @@ const AccountScreen: React.FC = () => {
           </div>
         ))}
         
-         <div className="bg-fin-card p-4 rounded-btn text-fin-error font-medium border border-fin-border flex items-center gap-4 cursor-pointer hover:bg-fin-error/5 transition-colors mt-8">
+         <div 
+            onClick={handleClearData}
+            className="bg-fin-card p-4 rounded-btn text-fin-error font-medium border border-fin-border flex items-center gap-4 cursor-pointer hover:bg-fin-error/5 transition-colors mt-8"
+        >
+            <div className="text-fin-error opacity-70">
+                <Trash2 size={20} strokeWidth={1.5} />
+            </div>
+            Очистить все данные
+        </div>
+
+         <div className="bg-fin-card p-4 rounded-btn text-fin-error font-medium border border-fin-border flex items-center gap-4 cursor-pointer hover:bg-fin-error/5 transition-colors">
             <div className="text-fin-error opacity-70">
                 <LogOut size={20} strokeWidth={1.5} />
             </div>

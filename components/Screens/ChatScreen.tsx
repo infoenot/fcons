@@ -343,15 +343,15 @@ export default function ChatScreen() {
           {messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               
-              <span className={`text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide ${msg.role === 'user' ? 'px-1' : 'px-0'}`}>
+              <span className="text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide px-1">
                   {getMessageDateLabel(msg.timestamp, msg.role)}
               </span>
 
               <div className={`
-                text-[14px] font-normal tracking-[0] leading-[1.35] transition-all
+                text-[14px] font-normal tracking-[0] leading-[1.35] transition-all max-w-[85%]
                 ${msg.role === 'user' 
-                  ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5 max-w-[85%]' 
-                  : 'bg-fin-card border border-fin-border rounded-2xl rounded-bl-none p-3.5 max-w-[85%] text-fin-text'} 
+                  ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5' 
+                  : 'text-left text-fin-text'} 
               `}>
                  {msg.isAudio ? (
                      <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
