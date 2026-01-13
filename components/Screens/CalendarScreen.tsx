@@ -12,10 +12,15 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Transaction, Category, TransactionType } from '../../types';
 import TransactionListModal from '../Modals/TransactionListModal';
 
+interface DisplayTransaction extends Transaction {
+  displayDate: string;
+}
+
 // Remove isStatsOpen from props
 const CalendarScreen: React.FC = () => {
   const { transactions, categories, addCategory, openTransactionModal, updateCategory } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [activeView, setActiveView] = useState<'categories' | 'transactions'>('categories');
   
   const [listModalConfig, setListModalConfig] = useState<{
     isOpen: boolean;
@@ -87,7 +92,6 @@ const CalendarScreen: React.FC = () => {
   const incomeCategories = sortedCategories.filter(c => c.type === 'INCOME');
   const expenseCategories = sortedCategories.filter(c => c.type === 'EXPENSE');
 
-
   const isTransactionOnDate = (t: Transaction, date: Date) => {
     const tDate = parseISO(t.date);
     if (isSameDay(tDate, date)) return true;
@@ -104,18 +108,29 @@ const CalendarScreen: React.FC = () => {
       return transactions.filter(t => isTransactionOnDate(t, date));
   };
 
+  const monthTransactions = useMemo(() => {
+    const txs: DisplayTransaction[] = [];
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+    daysInMonth.forEach(day => {
+        getTransactionsForDate(day).forEach(t => {
+            txs.push({ ...t, displayDate: format(day, 'yyyy-MM-dd') });
+        });
+    });
+    
+    return txs.sort((a, b) => parseISO(b.displayDate).getTime() - parseISO(a.displayDate).getTime());
+  }, [transactions, monthStart, monthEnd]);
+
+
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const getCategoryTotal = (catName: string) => {
     let total = 0;
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    daysInMonth.forEach(day => {
-      getTransactionsForDate(day).forEach(t => {
+    monthTransactions.forEach(t => {
         if (t.category.trim().toLowerCase() === catName.trim().toLowerCase() && t.includeInBalance) {
           total += t.amount;
         }
-      });
     });
     return total;
   };
@@ -191,8 +206,6 @@ const CalendarScreen: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5 transition-colors">
       
-      {/* Stats Dashboard REMOVED */}
-
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-4">
         
         {/* Calendar Card */}
@@ -250,53 +263,90 @@ const CalendarScreen: React.FC = () => {
             </div>
         </div>
 
-        {/* CATEGORY BLOCKS */}
+        {/* Tabbed View */}
         <div className="px-1 mb-6">
-            <h3 className="text-lg font-semibold text-fin-text mb-4 tracking-wide px-1">Доходы</h3>
-            <div className="grid grid-cols-2 gap-3">
-                {incomeCategories.map(cat => {
-                    const total = getCategoryTotal(cat.name);
-                    return (
-                        <div 
-                            key={cat.id} 
-                            onClick={() => openCategoryDetails(cat)}
-                            className="bg-[#2E3432] rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-[#40514A] hover:border-fin-borderFocus"
-                        >
-                            <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
-                            <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
-                                {total.toLocaleString('ru-RU')} ₽
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-
-            <h3 className="text-lg font-semibold text-fin-text mt-6 mb-4 tracking-wide px-1">Расходы</h3>
-            <div className="grid grid-cols-2 gap-3">
-                 {expenseCategories.map(cat => {
-                    const total = getCategoryTotal(cat.name);
-                    return (
-                        <div 
-                            key={cat.id} 
-                            onClick={() => openCategoryDetails(cat)}
-                            className="bg-fin-card border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
-                        >
-                            <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
-                            <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
-                                {total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
-                            </span>
-                        </div>
-                    );
-                })}
-                 <button 
-                    onClick={() => setIsAddCategoryOpen(true)}
-                    className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-[#252525] dark:border-[#353535] dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
-                    >
-                        <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
-                            <Plus size={24} />
-                        </div>
+            <div className="flex items-center gap-6 mb-4 px-2">
+                <button 
+                    onClick={() => setActiveView('categories')} 
+                    className={`text-lg font-semibold pb-2 border-b-2 transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text border-fin-accent' : 'text-fin-textTert border-transparent'}`}
+                >
+                    Категории
+                </button>
+                <button 
+                    onClick={() => setActiveView('transactions')} 
+                    className={`text-lg font-semibold pb-2 border-b-2 transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text border-fin-accent' : 'text-fin-textTert border-transparent'}`}
+                >
+                    Транзакции
                 </button>
             </div>
+
+            {activeView === 'categories' ? (
+                 <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
+                    {incomeCategories.map(cat => {
+                        const total = getCategoryTotal(cat.name);
+                        return (
+                            <div 
+                                key={cat.id} 
+                                onClick={() => openCategoryDetails(cat)}
+                                className="bg-[#2E3432] rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-[#40514A] hover:border-fin-borderFocus"
+                            >
+                                <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
+                                    {total.toLocaleString('ru-RU')} ₽
+                                </span>
+                            </div>
+                        );
+                    })}
+                    {expenseCategories.map(cat => {
+                        const total = getCategoryTotal(cat.name);
+                        return (
+                            <div 
+                                key={cat.id} 
+                                onClick={() => openCategoryDetails(cat)}
+                                className="bg-fin-card border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
+                            >
+                                <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
+                                    {total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
+                                </span>
+                            </div>
+                        );
+                    })}
+                     <button 
+                        onClick={() => setIsAddCategoryOpen(true)}
+                        className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-[#252525] dark:border-[#353535] dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
+                        >
+                            <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
+                                <Plus size={24} />
+                            </div>
+                    </button>
+                </div>
+            ) : (
+                <div className="space-y-2 animate-in fade-in duration-300">
+                    {monthTransactions.length > 0 ? (
+                        monthTransactions.map((t, index) => (
+                            <div 
+                                key={`${t.id}-${t.displayDate}-${index}`} 
+                                onClick={() => openTransactionModal('EDIT', t)} 
+                                className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 cursor-pointer hover:bg-fin-card transition-all"
+                            >
+                                <div className={`w-1 h-8 rounded-full ${t.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-error'}`}></div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-fin-text text-sm truncate">{t.category}</div>
+                                    <div className="text-xs text-fin-textTert">{capitalize(format(parseISO(t.displayDate), 'd MMMM, eeee', { locale: ru }))}</div>
+                                </div>
+                                <div className={`font-medium text-sm ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                    {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-12 text-fin-textTert text-sm">
+                            Нет транзакций в этом месяце.
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
       </div>
 
