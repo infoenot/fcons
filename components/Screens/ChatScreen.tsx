@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check, Plus } from 'lucide-react';
+import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check, Plus, Camera, Image } from 'lucide-react';
 import { generateAIResponse } from '../../services/geminiService';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat, Message } from '../../context/ChatContext';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Transaction } from '../../types';
+import BottomSheet from '../Shared/BottomSheet';
 
 export default function ChatScreen() {
   const [input, setInput] = useState('');
@@ -13,12 +14,14 @@ export default function ChatScreen() {
   
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const [playingMsgId, setPlayingMsgId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingStartTimeRef = useRef<number>(0);
@@ -294,22 +297,27 @@ export default function ChatScreen() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      const history = getHistory();
-      const reader = new FileReader();
-      
-      const userMsg: Message = { 
-        id: Date.now().toString(), 
-        role: 'user', 
-        content: "[Фото чека]", 
-        timestamp: new Date() 
-      };
-      setMessages(prev => [...prev, userMsg]);
-      setLoading(true);
-      // Clear the file input value to allow re-uploading the same file
-      e.target.value = '';
 
-      reader.onloadend = async () => {
-          const base64 = (reader.result as string).split(',')[1];
+      const reader = new FileReader();
+
+      reader.onload = async (event) => {
+          if (!event.target?.result || typeof event.target.result !== 'string') return;
+          
+          const imageUrl = event.target.result;
+          const base64 = imageUrl.split(',')[1];
+          const history = getHistory();
+          
+          const userMsg: Message = { 
+            id: Date.now().toString(), 
+            role: 'user', 
+            content: "", // The image is the content
+            timestamp: new Date(),
+            imageUrl: imageUrl,
+          };
+
+          setMessages(prev => [...prev, userMsg]);
+          setLoading(true);
+
           try {
              const result = await generateAIResponse("", history, base64);
              await processAIResult(result);
@@ -318,7 +326,9 @@ export default function ChatScreen() {
               setLoading(false);
           }
       };
+
       reader.readAsDataURL(file);
+      e.target.value = ''; // Clear file input to allow re-uploading the same file
   };
   
   const formatDuration = (seconds?: number) => {
@@ -356,65 +366,71 @@ export default function ChatScreen() {
                   {getMessageDateLabel(msg.timestamp, msg.role)}
               </span>
 
-              <div className={`
-                text-[14px] font-normal tracking-[0] leading-[1.35] transition-all max-w-[85%]
-                ${msg.role === 'user' 
-                  ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5' 
-                  : 'text-left text-fin-text'} 
-              `}>
-                 {msg.isAudio ? (
-                     <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
-                         <button 
-                           onClick={() => togglePlayback(msg.id, msg.audioUrl)}
-                           className={`
-                              w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all 
-                              ${playingMsgId === msg.id ? 'bg-white text-fin-accent shadow-md scale-105' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}
-                           `}
-                         >
-                             {playingMsgId === msg.id ? (
-                                 <Pause size={14} fill="currentColor" />
-                             ) : (
-                                 <Play size={14} fill="currentColor" className="ml-0.5" />
-                             )}
-                         </button>
-                         <div className="flex-1 flex items-center justify-center gap-[2px] h-8 mx-2 select-none pointer-events-none">
-                            {waveData.map((h, i) => (
-                              <div key={i} className={`w-[2px] rounded-full transition-all duration-300 ${playingMsgId === msg.id ? 'bg-white' : 'bg-white/40'}`} style={{ height: `${Math.max(20, h)}%`, transform: playingMsgId === msg.id ? 'scaleY(1.1)' : 'scaleY(1)' }} />
-                            ))}
-                         </div>
-                         <span className="text-[10px] font-mono opacity-80 tracking-widest ml-auto shrink-0 pt-0.5">
-                             {formatDuration(msg.duration)}
-                         </span>
+              { msg.imageUrl && msg.role === 'user' ? (
+                <div className="max-w-[85%] rounded-2xl rounded-br-none shadow-md overflow-hidden bg-fin-accent">
+                    <img src={msg.imageUrl} alt="Фото чека" className="block w-full h-auto" />
+                </div>
+              ) : (
+                <div className={`
+                  text-[14px] font-normal tracking-[0] leading-[1.35] transition-all max-w-[85%]
+                  ${msg.role === 'user' 
+                    ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5' 
+                    : 'text-left text-fin-text'} 
+                `}>
+                   {msg.isAudio ? (
+                       <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
+                           <button 
+                             onClick={() => togglePlayback(msg.id, msg.audioUrl)}
+                             className={`
+                                w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all 
+                                ${playingMsgId === msg.id ? 'bg-white text-fin-accent shadow-md scale-105' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}
+                             `}
+                           >
+                               {playingMsgId === msg.id ? (
+                                   <Pause size={14} fill="currentColor" />
+                               ) : (
+                                   <Play size={14} fill="currentColor" className="ml-0.5" />
+                               )}
+                           </button>
+                           <div className="flex-1 flex items-center justify-center gap-[2px] h-8 mx-2 select-none pointer-events-none">
+                              {waveData.map((h, i) => (
+                                <div key={i} className={`w-[2px] rounded-full transition-all duration-300 ${playingMsgId === msg.id ? 'bg-white' : 'bg-white/40'}`} style={{ height: `${Math.max(20, h)}%`, transform: playingMsgId === msg.id ? 'scaleY(1.1)' : 'scaleY(1)' }} />
+                              ))}
+                           </div>
+                           <span className="text-[10px] font-mono opacity-80 tracking-widest ml-auto shrink-0 pt-0.5">
+                               {formatDuration(msg.duration)}
+                           </span>
+                       </div>
+                   ) : (
+                     <div className="space-y-3">
+                        {msg.content && <div>{msg.content}</div>}
+                        
+                        {msg.transactions && msg.transactions.length > 0 && (
+                          <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                             {msg.transactions.map((tx) => (
+                               <ChatTransactionCard 
+                                 key={tx.id} 
+                                 transaction={tx} 
+                                 onEdit={() => openTransactionModal('EDIT', tx)}
+                                 onDelete={() => {
+                                   if(confirm('Удалить операцию?')) {
+                                     deleteTransaction(tx.id);
+                                     setMessages(prev => [...prev, {
+                                       id: Date.now().toString(),
+                                       role: 'assistant',
+                                       content: `Удалил ${tx.category} на сумму ${tx.amount} ₽.`,
+                                       timestamp: new Date()
+                                     }]);
+                                   }
+                                 }}
+                               />
+                             ))}
+                          </div>
+                        )}
                      </div>
-                 ) : (
-                   <div className="space-y-3">
-                      {msg.content !== "[IMG_UPLOAD]" && <div>{msg.content}</div>}
-                      
-                      {msg.transactions && msg.transactions.length > 0 && (
-                        <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                           {msg.transactions.map((tx) => (
-                             <ChatTransactionCard 
-                               key={tx.id} 
-                               transaction={tx} 
-                               onEdit={() => openTransactionModal('EDIT', tx)}
-                               onDelete={() => {
-                                 if(confirm('Удалить операцию?')) {
-                                   deleteTransaction(tx.id);
-                                   setMessages(prev => [...prev, {
-                                     id: Date.now().toString(),
-                                     role: 'assistant',
-                                     content: `Удалил ${tx.category} на сумму ${tx.amount} ₽.`,
-                                     timestamp: new Date()
-                                   }]);
-                                 }
-                               }}
-                             />
-                           ))}
-                        </div>
-                      )}
-                   </div>
-                 )}
-              </div>
+                   )}
+                </div>
+              )}
             </div>
           ))}
           
@@ -431,12 +447,13 @@ export default function ChatScreen() {
 
         {/* Input Area */}
         <div className="bg-fin-card rounded-3xl border border-fin-border p-4 flex items-end justify-between gap-3 shadow-sm shrink-0">
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleFileUpload} />
+          <input type="file" ref={galleryInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+          <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleFileUpload} />
           <textarea ref={textareaRef} rows={1} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isRecording ? "Запись..." : "Жду указаний..."} className="bg-transparent border-none outline-none text-fin-text placeholder-fin-textTert/50 text-base font-medium flex-1 resize-none py-2 max-h-[160px] overflow-y-auto no-scrollbar placeholder:text-sm placeholder:font-normal" disabled={loading || isRecording} />
           
           <div className="flex items-center shrink-0 gap-4">
             <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setIsSheetOpen(true)}
                 disabled={loading || isRecording}
                 className="w-5 h-5 flex items-center justify-center text-fin-textTert hover:text-fin-text transition-colors rounded-full border border-fin-textTert"
                 aria-label="Прикрепить фото"
@@ -449,6 +466,30 @@ export default function ChatScreen() {
           </div>
         </div>
       </div>
+      <BottomSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)}>
+        <div className="grid grid-cols-2 gap-4 p-4 pt-2">
+          <button
+            onClick={() => {
+              cameraInputRef.current?.click();
+              setIsSheetOpen(false);
+            }}
+            className="flex flex-col items-center justify-center gap-3 py-5 bg-fin-bgSec rounded-card border border-fin-border hover:border-fin-accent transition-colors active:scale-95"
+          >
+            <Camera size={28} className="text-fin-accent" />
+            <span className="text-sm font-medium text-fin-text">Камера</span>
+          </button>
+          <button
+            onClick={() => {
+              galleryInputRef.current?.click();
+              setIsSheetOpen(false);
+            }}
+            className="flex flex-col items-center justify-center gap-3 py-5 bg-fin-bgSec rounded-card border border-fin-border hover:border-fin-accent transition-colors active:scale-95"
+          >
+            <Image size={28} className="text-fin-accent" />
+            <span className="text-sm font-medium text-fin-text">Галерея</span>
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

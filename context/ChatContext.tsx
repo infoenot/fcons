@@ -11,6 +11,7 @@ export interface Message {
   audioUrl?: string; // URL for playback
   toolCall?: any;
   transactions?: Transaction[]; // For interactive cards in chat
+  imageUrl?: string; // For uploaded images
 }
 
 interface ChatContextType {
