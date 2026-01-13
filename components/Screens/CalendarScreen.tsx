@@ -260,7 +260,7 @@ const CalendarScreen: React.FC = () => {
                         <div 
                             key={cat.id} 
                             onClick={() => openCategoryDetails(cat)}
-                            className="bg-fin-bgSec border-fin-border hover:brightness-105 dark:bg-[#333131] dark:border-[#3c3c3c] rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
+                            className="bg-fin-bgSec rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-fin-success/50 hover:border-fin-success"
                         >
                             <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                             <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>

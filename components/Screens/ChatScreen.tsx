@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check } from 'lucide-react';
+import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check, Plus } from 'lucide-react';
 import { generateAIResponse } from '../../services/geminiService';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat, Message } from '../../context/ChatContext';
@@ -238,7 +238,7 @@ export default function ChatScreen() {
                     let runningBalance = 0;
                     const sorted = [...transactions]
                       .filter(t => t.includeInBalance)
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime());
                     
                     for (const t of sorted) {
                         if (t.date <= date) {
@@ -296,13 +296,22 @@ export default function ChatScreen() {
       if (!file) return;
       const history = getHistory();
       const reader = new FileReader();
+      
+      const userMsg: Message = { 
+        id: Date.now().toString(), 
+        role: 'user', 
+        content: "[Фото чека]", 
+        timestamp: new Date() 
+      };
+      setMessages(prev => [...prev, userMsg]);
+      setLoading(true);
+      // Clear the file input value to allow re-uploading the same file
+      e.target.value = '';
+
       reader.onloadend = async () => {
           const base64 = (reader.result as string).split(',')[1];
-          const userMsg: Message = { id: Date.now().toString(), role: 'user', content: "[IMG_UPLOAD]", timestamp: new Date() };
-          setMessages(prev => [...prev, userMsg]);
-          setLoading(true);
           try {
-             const result = await generateAIResponse("Scan this receipt.", history, base64);
+             const result = await generateAIResponse("", history, base64);
              await processAIResult(result);
           } catch (err) {
               console.error(err);
@@ -421,12 +430,23 @@ export default function ChatScreen() {
         </div>
 
         {/* Input Area */}
-        <div className="bg-fin-card rounded-3xl border border-fin-border p-4 flex items-end justify-between gap-4 shadow-sm shrink-0">
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-          <textarea ref={textareaRef} rows={1} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isRecording ? "Запись..." : "Сообщение..."} className="bg-transparent border-none outline-none text-fin-text placeholder-fin-textTert/50 text-base font-medium flex-1 resize-none py-2 max-h-[160px] overflow-y-auto no-scrollbar" disabled={loading || isRecording} />
-          <button onClick={input.length > 0 ? handleSendText : handleMicClick} disabled={loading} className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95 shrink-0 ${isRecording ? 'bg-fin-error text-white animate-pulse' : 'bg-fin-accent text-white'}`}>
-            {input.length > 0 ? <Send size={20} className="ml-0.5" /> : isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={24} />}
-          </button>
+        <div className="bg-fin-card rounded-3xl border border-fin-border p-4 flex items-end justify-between gap-3 shadow-sm shrink-0">
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleFileUpload} />
+          <textarea ref={textareaRef} rows={1} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isRecording ? "Запись..." : "Жду указаний..."} className="bg-transparent border-none outline-none text-fin-text placeholder-fin-textTert/50 text-base font-medium flex-1 resize-none py-2 max-h-[160px] overflow-y-auto no-scrollbar placeholder:text-sm placeholder:font-normal" disabled={loading || isRecording} />
+          
+          <div className="flex items-center shrink-0 gap-4">
+            <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || isRecording}
+                className="w-5 h-5 flex items-center justify-center text-fin-textTert hover:text-fin-text transition-colors rounded-full border border-fin-textTert"
+                aria-label="Прикрепить фото"
+            >
+                <Plus size={14} />
+            </button>
+            <button onClick={input.length > 0 ? handleSendText : handleMicClick} disabled={loading} className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95 ${isRecording ? 'bg-fin-error text-white animate-pulse' : 'bg-fin-accent text-white'}`}>
+              {input.length > 0 ? <Send size={20} className="ml-0.5" /> : isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={24} />}
+            </button>
+          </div>
         </div>
       </div>
     </div>
