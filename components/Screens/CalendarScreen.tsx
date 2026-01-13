@@ -268,13 +268,13 @@ const CalendarScreen: React.FC = () => {
             <div className="flex items-center gap-6 mb-4 px-2">
                 <button 
                     onClick={() => setActiveView('categories')} 
-                    className={`text-lg font-semibold pb-2 border-b-2 transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text border-fin-accent' : 'text-fin-textTert border-transparent'}`}
+                    className={`text-lg font-semibold transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text' : 'text-fin-textTert'}`}
                 >
                     Категории
                 </button>
                 <button 
                     onClick={() => setActiveView('transactions')} 
-                    className={`text-lg font-semibold pb-2 border-b-2 transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text border-fin-accent' : 'text-fin-textTert border-transparent'}`}
+                    className={`text-lg font-semibold transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text' : 'text-fin-textTert'}`}
                 >
                     Транзакции
                 </button>

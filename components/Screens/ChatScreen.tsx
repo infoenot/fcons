@@ -358,11 +358,11 @@ export default function ChatScreen() {
       <div className="flex-1 px-4 pb-3 pt-4 min-h-0 flex flex-col gap-4">
         
         {/* Chat Message List */}
-        <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+        <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-3">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               
-              <span className="text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide px-1">
+              <span className={`text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide ${msg.role === 'assistant' ? 'pr-1' : 'px-1'}`}>
                   {getMessageDateLabel(msg.timestamp, msg.role)}
               </span>
 
@@ -372,10 +372,10 @@ export default function ChatScreen() {
                 </div>
               ) : (
                 <div className={`
-                  text-[14px] font-normal tracking-[0] leading-[1.35] transition-all max-w-[85%]
+                  text-[14px] font-normal tracking-[0] leading-[1.35] transition-all
                   ${msg.role === 'user' 
-                    ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5' 
-                    : 'text-left text-fin-text'} 
+                    ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5 max-w-[85%]' 
+                    : 'text-left text-fin-text max-w-[68%]'} 
                 `}>
                    {msg.isAudio ? (
                        <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
