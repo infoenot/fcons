@@ -7,7 +7,6 @@ import { format, differenceInCalendarDays, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Transaction } from '../../types';
 
-// Remove isStatsOpen prop
 export default function ChatScreen() {
   const [input, setInput] = useState('');
   const { messages, setMessages } = useChat(); 
@@ -337,100 +336,97 @@ export default function ChatScreen() {
 
   return (
     <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5">
-      
-      {/* Stats Dashboard REMOVED */}
+      <div className="flex-1 px-4 pb-3 pt-4 min-h-0 flex flex-col gap-4">
+        
+        {/* Chat Message List */}
+        <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              
+              <span className={`text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide ${msg.role === 'user' ? 'px-1' : 'px-0'}`}>
+                  {getMessageDateLabel(msg.timestamp, msg.role)}
+              </span>
 
-      {/* Chat Area */}
-      <div className="flex-1 px-4 pb-1 pt-4 min-h-0 flex flex-col">
-        <div className="bg-fin-card rounded-3xl flex-1 flex flex-col border border-fin-border relative overflow-hidden shadow-sm">
-          
-          <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6 pt-6">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                
-                <span className={`text-[10px] text-fin-textTert mb-1.5 font-medium tracking-wide ${msg.role === 'user' ? 'px-1' : 'px-0'}`}>
-                    {getMessageDateLabel(msg.timestamp, msg.role)}
-                </span>
-
-                <div className={`
-                  text-[14px] font-normal tracking-[0] leading-[1.35] transition-all
-                  ${msg.role === 'user' 
-                    ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5 max-w-[75%]' 
-                    : 'bg-transparent text-fin-text pt-0 pb-1 w-full'} 
-                `}>
-                   {msg.isAudio ? (
-                       <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
-                           <button 
-                             onClick={() => togglePlayback(msg.id, msg.audioUrl)}
-                             className={`
-                                w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all 
-                                ${playingMsgId === msg.id ? 'bg-white text-fin-accent shadow-md scale-105' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}
-                             `}
-                           >
-                               {playingMsgId === msg.id ? (
-                                   <Pause size={14} fill="currentColor" />
-                               ) : (
-                                   <Play size={14} fill="currentColor" className="ml-0.5" />
-                               )}
-                           </button>
-                           <div className="flex-1 flex items-center justify-center gap-[2px] h-8 mx-2 select-none pointer-events-none">
-                              {waveData.map((h, i) => (
-                                <div key={i} className={`w-[2px] rounded-full transition-all duration-300 ${playingMsgId === msg.id ? 'bg-white' : 'bg-white/40'}`} style={{ height: `${Math.max(20, h)}%`, transform: playingMsgId === msg.id ? 'scaleY(1.1)' : 'scaleY(1)' }} />
-                              ))}
-                           </div>
-                           <span className="text-[10px] font-mono opacity-80 tracking-widest ml-auto shrink-0 pt-0.5">
-                               {formatDuration(msg.duration)}
-                           </span>
-                       </div>
-                   ) : (
-                     <div className="space-y-3">
-                        {msg.content !== "[IMG_UPLOAD]" && <div>{msg.content}</div>}
-                        
-                        {/* Interactive Transaction Cards */}
-                        {msg.transactions && msg.transactions.length > 0 && (
-                          <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                             {msg.transactions.map((tx) => (
-                               <ChatTransactionCard 
-                                 key={tx.id} 
-                                 transaction={tx} 
-                                 onEdit={() => openTransactionModal('EDIT', tx)}
-                                 onDelete={() => {
-                                   if(confirm('Удалить операцию?')) {
-                                     deleteTransaction(tx.id);
-                                     setMessages(prev => [...prev, {
-                                       id: Date.now().toString(),
-                                       role: 'assistant',
-                                       content: `Удалил ${tx.category} на сумму ${tx.amount} ₽.`,
-                                       timestamp: new Date()
-                                     }]);
-                                   }
-                                 }}
-                               />
-                             ))}
-                          </div>
-                        )}
+              <div className={`
+                text-[14px] font-normal tracking-[0] leading-[1.35] transition-all
+                ${msg.role === 'user' 
+                  ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5 max-w-[85%]' 
+                  : 'bg-fin-card border border-fin-border rounded-2xl rounded-bl-none p-3.5 max-w-[85%] text-fin-text'} 
+              `}>
+                 {msg.isAudio ? (
+                     <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
+                         <button 
+                           onClick={() => togglePlayback(msg.id, msg.audioUrl)}
+                           className={`
+                              w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all 
+                              ${playingMsgId === msg.id ? 'bg-white text-fin-accent shadow-md scale-105' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}
+                           `}
+                         >
+                             {playingMsgId === msg.id ? (
+                                 <Pause size={14} fill="currentColor" />
+                             ) : (
+                                 <Play size={14} fill="currentColor" className="ml-0.5" />
+                             )}
+                         </button>
+                         <div className="flex-1 flex items-center justify-center gap-[2px] h-8 mx-2 select-none pointer-events-none">
+                            {waveData.map((h, i) => (
+                              <div key={i} className={`w-[2px] rounded-full transition-all duration-300 ${playingMsgId === msg.id ? 'bg-white' : 'bg-white/40'}`} style={{ height: `${Math.max(20, h)}%`, transform: playingMsgId === msg.id ? 'scaleY(1.1)' : 'scaleY(1)' }} />
+                            ))}
+                         </div>
+                         <span className="text-[10px] font-mono opacity-80 tracking-widest ml-auto shrink-0 pt-0.5">
+                             {formatDuration(msg.duration)}
+                         </span>
                      </div>
-                   )}
-                </div>
+                 ) : (
+                   <div className="space-y-3">
+                      {msg.content !== "[IMG_UPLOAD]" && <div>{msg.content}</div>}
+                      
+                      {msg.transactions && msg.transactions.length > 0 && (
+                        <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                           {msg.transactions.map((tx) => (
+                             <ChatTransactionCard 
+                               key={tx.id} 
+                               transaction={tx} 
+                               onEdit={() => openTransactionModal('EDIT', tx)}
+                               onDelete={() => {
+                                 if(confirm('Удалить операцию?')) {
+                                   deleteTransaction(tx.id);
+                                   setMessages(prev => [...prev, {
+                                     id: Date.now().toString(),
+                                     role: 'assistant',
+                                     content: `Удалил ${tx.category} на сумму ${tx.amount} ₽.`,
+                                     timestamp: new Date()
+                                   }]);
+                                 }
+                               }}
+                             />
+                           ))}
+                        </div>
+                      )}
+                   </div>
+                 )}
               </div>
-            ))}
-            
-            {loading && (
+            </div>
+          ))}
+          
+          {loading && (
+             <div className="flex items-start">
                <div className="flex items-center gap-2 text-fin-textTert text-xs pl-0 mt-2">
                  <Loader2 className="animate-spin" size={12} />
                  <span>Анализирую...</span>
                </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+             </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-          <div className="p-4 bg-fin-card shrink-0 flex items-end justify-between gap-4">
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-            <textarea ref={textareaRef} rows={1} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isRecording ? "Запись..." : "Сообщение..."} className="bg-transparent border-none outline-none text-fin-textTert placeholder-fin-textTert/50 text-base font-medium flex-1 resize-none py-2 max-h-[160px] overflow-y-auto no-scrollbar" disabled={loading || isRecording} />
-            <button onClick={input.length > 0 ? handleSendText : handleMicClick} disabled={loading} className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95 shrink-0 ${isRecording ? 'bg-fin-error text-white animate-pulse' : 'bg-fin-accent text-white'}`}>
-              {input.length > 0 ? <Send size={20} className="ml-0.5" /> : isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={24} />}
-            </button>
-          </div>
+        {/* Input Area */}
+        <div className="bg-fin-card rounded-3xl border border-fin-border p-4 flex items-end justify-between gap-4 shadow-sm shrink-0">
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+          <textarea ref={textareaRef} rows={1} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isRecording ? "Запись..." : "Сообщение..."} className="bg-transparent border-none outline-none text-fin-text placeholder-fin-textTert/50 text-base font-medium flex-1 resize-none py-2 max-h-[160px] overflow-y-auto no-scrollbar" disabled={loading || isRecording} />
+          <button onClick={input.length > 0 ? handleSendText : handleMicClick} disabled={loading} className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-all active:scale-95 shrink-0 ${isRecording ? 'bg-fin-error text-white animate-pulse' : 'bg-fin-accent text-white'}`}>
+            {input.length > 0 ? <Send size={20} className="ml-0.5" /> : isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={24} />}
+          </button>
         </div>
       </div>
     </div>
