@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Transaction } from '../types';
 
 export interface Message {
   id: string;
@@ -9,6 +10,7 @@ export interface Message {
   duration?: number; // Duration in seconds
   audioUrl?: string; // URL for playback
   toolCall?: any;
+  transactions?: Transaction[]; // For interactive cards in chat
 }
 
 interface ChatContextType {

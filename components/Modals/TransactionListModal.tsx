@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Transaction } from '../../types';
-import { X, Plus, Edit2, Trash2, Check, Repeat, Pencil } from 'lucide-react';
+import { X, Plus, Edit2, Trash2, Check, Repeat, Pencil, CheckCheck } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat } from '../../context/ChatContext';
 import { format, parseISO } from 'date-fns';
@@ -74,6 +74,23 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
         content: `Подтвердил выполнение операции: ${t.category}, ${t.amount} ₽.`,
         timestamp: new Date()
       }]);
+  };
+
+  const handleConfirmAll = () => {
+    if (transactions.length === 0) return;
+    
+    transactions.forEach(t => {
+      updateTransaction({ ...t, status: 'ACTUAL' });
+    });
+
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `Одобрил все запланированные операции (${transactions.length} шт.).`,
+      timestamp: new Date()
+    }]);
+    
+    onClose();
   };
 
   const saveTitle = () => {
@@ -197,12 +214,25 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
           )}
         </div>
 
-        {/* Footer (Add Button) */}
-        {onAdd && (
-          <div className="pt-4 border-t border-fin-border shrink-0">
-            <button onClick={onAdd} className="w-full py-4 bg-fin-accent hover:bg-fin-accentSec text-white rounded-btn font-bold text-base transition-colors flex items-center justify-center gap-2">
-              <Plus size={20} /> Добавить операцию
-            </button>
+        {/* Footer */}
+        {(onAdd || (mode === 'NOTIFICATIONS' && transactions.length > 0)) && (
+          <div className="pt-4 border-t border-fin-border shrink-0 flex flex-col gap-2">
+            {mode === 'NOTIFICATIONS' && transactions.length > 0 && (
+              <button 
+                onClick={handleConfirmAll} 
+                className="w-full py-4 bg-fin-success hover:brightness-110 text-white rounded-btn font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <CheckCheck size={20} /> Одобрить все
+              </button>
+            )}
+            {onAdd && (
+              <button 
+                onClick={onAdd} 
+                className="w-full py-4 bg-fin-accent hover:bg-fin-accentSec text-white rounded-btn font-bold text-base transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={20} /> Добавить операцию
+              </button>
+            )}
           </div>
         )}
       </div>

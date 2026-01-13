@@ -4,14 +4,15 @@ import { format, addMonths, isBefore, parseISO, isSameDay, startOfMonth, endOfMo
 
 interface ModalState {
   isOpen: boolean;
-  mode: 'ADD' | 'EDIT' | 'CONFIRM'; // CONFIRM acts like ADD but with pre-filled AI data
-  drafts: Partial<Transaction>[]; // Changed from single initialData to array of drafts
+  mode: 'ADD' | 'EDIT' | 'CONFIRM'; 
+  drafts: Partial<Transaction>[]; 
 }
 
 interface FinanceContextType {
   transactions: Transaction[];
   categories: Category[];
   addTransaction: (t: Omit<Transaction, 'id'>) => void;
+  addTransactions: (ts: Omit<Transaction, 'id'>[]) => void;
   updateTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
   addCategory: (name: string, type: TransactionType) => void;
@@ -28,13 +29,11 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize state from localStorage if available
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem('fin_transactions');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load transactions", e);
       return [];
     }
   });
@@ -44,7 +43,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       const saved = localStorage.getItem('fin_categories');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load categories", e);
       return [];
     }
   });
@@ -57,23 +55,18 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     drafts: []
   });
 
-  // Save to localStorage whenever transactions change
   useEffect(() => {
     localStorage.setItem('fin_transactions', JSON.stringify(transactions));
   }, [transactions]);
 
-  // Save to localStorage whenever categories change
   useEffect(() => {
     localStorage.setItem('fin_categories', JSON.stringify(categories));
   }, [categories]);
 
-  // Check for past due planned transactions (Past + Today only)
   useEffect(() => {
     const today = new Date();
     const pending = transactions.filter(t => {
-      // Must be planned
       if (t.status !== 'PLANNED') return false;
-      
       const txDate = parseISO(t.date);
       return differenceInCalendarDays(today, txDate) >= 0;
     });
@@ -85,6 +78,14 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     setTransactions(prev => [...prev, newTx]);
   };
 
+  const addTransactions = (ts: Omit<Transaction, 'id'>[]) => {
+    const newTxs: Transaction[] = ts.map(t => ({ 
+      ...t, 
+      id: Math.random().toString(36).substr(2, 9) 
+    }));
+    setTransactions(prev => [...prev, ...newTxs]);
+  };
+
   const updateTransaction = (t: Transaction) => {
     setTransactions(prev => prev.map(tx => tx.id === t.id ? t : tx));
   };
@@ -94,10 +95,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addCategory = (name: string, type: TransactionType) => {
-    // Basic color generation or rotation could be added here
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
     const newCat: Category = {
       id: Math.random().toString(36).substr(2, 9),
       name,
@@ -111,12 +110,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     const oldCat = categories.find(c => c.id === id);
     if (!oldCat || !newName.trim()) return;
     const cleanName = newName.trim();
-
-    // 1. Update the category itself
     setCategories(prev => prev.map(c => c.id === id ? { ...c, name: cleanName } : c));
-
-    // 2. Update all transactions linked to this category name
-    // (Since we store category as string in Transaction)
     setTransactions(prev => prev.map(t => 
         t.category === oldCat.name ? { ...t, category: cleanName } : t
     ));
@@ -130,79 +124,52 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     let income = 0;
     let expense = 0;
     
-    // 1. Calculate stats for the specific month (Actual + Planned if included)
     transactions.forEach(t => {
        if (!t.includeInBalance) return;
-       
-       const tDate = t.date; // string YYYY-MM-DD
-       if (tDate >= format(start, 'yyyy-MM-dd') && tDate <= format(end, 'yyyy-MM-dd')) {
+       if (t.date >= format(start, 'yyyy-MM-dd') && t.date <= format(end, 'yyyy-MM-dd')) {
            if (t.type === 'INCOME') income += t.amount;
            else expense += t.amount;
        }
     });
 
-    // 2. Calculate Total Balance (All time) & Cash Gap
-    // To do this accurately for Cash Gap, we need to sort ALL transactions by date.
     const sortedTxs = [...transactions]
         .filter(t => t.includeInBalance)
-        .sort((a, b) => {
-            const dateA = parseISO(a.date).getTime();
-            const dateB = parseISO(b.date).getTime();
-            return dateA - dateB;
-        });
+        .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
 
     let runningBalance = 0;
     let cashGap: CashGap | null = null;
     let balanceEndOfMonth = 0;
-
     const endOfMonthStr = format(end, 'yyyy-MM-dd');
 
     sortedTxs.forEach(t => {
         if (t.type === 'INCOME') runningBalance += t.amount;
         else runningBalance -= t.amount;
-
-        // Check for Cash Gap (only for future dates or today)
-        // If running balance drops below zero, record it
         const tDate = parseISO(t.date);
         if (runningBalance < 0 && !cashGap && differenceInCalendarDays(tDate, today) >= 0) {
             cashGap = { date: t.date, amount: runningBalance };
         }
-
-        // Capture balance at end of requested month
         if (t.date <= endOfMonthStr) {
             balanceEndOfMonth = runningBalance;
         }
     });
 
-    const totalBalance = runningBalance; // Final state after all transactions
-
-    // Average Calculation: Total (Plan + Actual) / Total Days in Month
     const daysInMonth = end.getDate();
-    
-    const avgDailyExpense = daysInMonth > 0 ? expense / daysInMonth : 0;
-    const avgDailyIncome = daysInMonth > 0 ? income / daysInMonth : 0;
-
     return {
       income,
       expense,
-      balance: totalBalance,
+      balance: runningBalance,
       projectedBalance: balanceEndOfMonth,
       cashGap,
-      avgDailyIncome,
-      avgDailyExpense
+      avgDailyIncome: daysInMonth > 0 ? income / daysInMonth : 0,
+      avgDailyExpense: daysInMonth > 0 ? expense / daysInMonth : 0
     };
   };
 
   const openTransactionModal = (mode: 'ADD' | 'EDIT' | 'CONFIRM', data?: Partial<Transaction> | Partial<Transaction>[]) => {
     let drafts: Partial<Transaction>[] = [];
-    if (Array.isArray(data)) {
-      drafts = data;
-    } else if (data) {
-      drafts = [data];
-    } else {
-      // Default empty draft
-      drafts = [{}];
-    }
+    if (Array.isArray(data)) drafts = data;
+    else if (data) drafts = [data];
+    else drafts = [{}];
     setModalState({ isOpen: true, mode, drafts });
   };
 
@@ -212,18 +179,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   return (
     <FinanceContext.Provider value={{ 
-      transactions, 
-      categories, 
-      addTransaction, 
-      updateTransaction, 
-      deleteTransaction,
-      addCategory,
-      updateCategory,
-      getSummary,
-      pendingConfirmations,
-      modalState,
-      openTransactionModal,
-      closeTransactionModal
+      transactions, categories, addTransaction, addTransactions, updateTransaction, deleteTransaction,
+      addCategory, updateCategory, getSummary, pendingConfirmations,
+      modalState, openTransactionModal, closeTransactionModal
     }}>
       {children}
     </FinanceContext.Provider>

@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Bell, ChevronDown } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import TransactionListModal from '../Modals/TransactionListModal';
 
-interface HeaderProps {
-  isStatsOpen: boolean;
-  onToggleStats: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ isStatsOpen, onToggleStats }) => {
+// Remove props related to the stats drawer
+const Header: React.FC = () => {
   const { getSummary, pendingConfirmations } = useFinance();
   const summary = getSummary(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
@@ -21,20 +17,13 @@ const Header: React.FC<HeaderProps> = ({ isStatsOpen, onToggleStats }) => {
     <>
       <div className="bg-fin-bg sticky top-0 z-50 pt-8 pb-2 px-6 transition-all duration-300">
         <div className="flex justify-between items-center">
-          <div 
-            className="flex items-center gap-3 cursor-pointer select-none group"
-            onClick={onToggleStats}
-          >
+          {/* Remove onClick handler and ChevronDown icon */}
+          <div className="flex items-center gap-3 select-none">
             <h1 className="text-3xl font-semibold text-fin-text tracking-tight transition-colors">
               {formatCurrency(summary.balance)}
             </h1>
-            <div className="flex items-center gap-1 text-fin-textTert mt-1 group-hover:text-fin-text transition-colors">
+            <div className="flex items-center gap-1 text-fin-textTert mt-1 transition-colors">
               <span className="text-sm font-medium">Баланс</span>
-              <ChevronDown 
-                size={16} 
-                strokeWidth={2} 
-                className={`transition-transform duration-300 ${isStatsOpen ? 'rotate-180' : ''}`}
-              />
             </div>
           </div>
           

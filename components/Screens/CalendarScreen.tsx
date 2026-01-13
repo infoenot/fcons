@@ -11,23 +11,18 @@ import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Transaction, Category, TransactionType } from '../../types';
 import TransactionListModal from '../Modals/TransactionListModal';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface CalendarScreenProps {
-  isStatsOpen?: boolean;
-}
-
-const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) => {
-  const { transactions, categories, addCategory, openTransactionModal, getSummary, updateCategory } = useFinance();
+// Remove isStatsOpen from props
+const CalendarScreen: React.FC = () => {
+  const { transactions, categories, addCategory, openTransactionModal, updateCategory } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
-  // Unified List Modal State
   const [listModalConfig, setListModalConfig] = useState<{
     isOpen: boolean;
     title: string;
     subtitle: string;
     filterType: 'DATE' | 'CATEGORY';
-    filterValue: any; // Date or Category Name
+    filterValue: any;
   }>({
     isOpen: false,
     title: '',
@@ -38,30 +33,6 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
   
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
 
-  // --- Stats Dashboard Logic ---
-  const summary = getSummary(new Date());
-
-  const formatCurrency = (val: number, isExpense: boolean = false) => {
-    const prefix = isExpense && val > 0 ? '-' : '';
-    return prefix + val.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 });
-  };
-
-  const getCashGapDisplay = () => {
-    if (!summary.cashGap) return 'Нет';
-    const days = differenceInCalendarDays(parseISO(summary.cashGap.date), new Date());
-    if (days <= 0) return 'Сегодня';
-    return `${days} д.`;
-  };
-
-  const stats = [
-    { label: 'Поступления', value: formatCurrency(summary.income) },
-    { label: 'Все расходы', value: formatCurrency(summary.expense, true) },
-    { label: 'Доход в день', value: formatCurrency(summary.avgDailyIncome) },
-    { label: 'Расход в день', value: formatCurrency(summary.avgDailyExpense, true) },
-    { label: 'На конец мес.', value: formatCurrency(summary.projectedBalance) },
-    { label: 'Кассовый разрыв', value: getCashGapDisplay() },
-  ];
-
   // --- Calendar Logic ---
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -70,67 +41,49 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
   
   const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // --- Daily Balance Calculation ---
   const dailyBalances = useMemo(() => {
-      const balances: Record<string, number> = {};
-      const startStr = format(startDate, 'yyyy-MM-dd');
-      
-      let running = 0;
-      const sorted = [...transactions]
-        .filter(t => t.includeInBalance)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const balances: Record<string, number> = {};
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    let running = 0;
+    const sorted = [...transactions]
+      .filter(t => t.includeInBalance)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      for (const t of sorted) {
-          if (t.date < startStr) {
-               running += (t.type === 'INCOME' ? t.amount : -t.amount);
-          } else {
-              break; 
-          }
+    for (const t of sorted) {
+      if (t.date < startStr) {
+        running += (t.type === 'INCOME' ? t.amount : -t.amount);
+      } else {
+        break; 
       }
-      
-      const txMap = new Map<string, Transaction[]>();
-      sorted.filter(t => t.date >= startStr).forEach(t => {
-           if(!txMap.has(t.date)) txMap.set(t.date, []);
-           txMap.get(t.date)!.push(t);
+    }
+    
+    const txMap = new Map<string, Transaction[]>();
+    sorted.filter(t => t.date >= startStr).forEach(t => {
+      if(!txMap.has(t.date)) txMap.set(t.date, []);
+      txMap.get(t.date)!.push(t);
+    });
+    
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    days.forEach(day => {
+      const dStr = format(day, 'yyyy-MM-dd');
+      const dayTxs = txMap.get(dStr) || [];
+      dayTxs.forEach(t => {
+        running += (t.type === 'INCOME' ? t.amount : -t.amount);
       });
-      
-      const days = eachDayOfInterval({ start: startDate, end: endDate });
-      days.forEach(day => {
-          const dStr = format(day, 'yyyy-MM-dd');
-          const dayTxs = txMap.get(dStr) || [];
-          dayTxs.forEach(t => {
-               running += (t.type === 'INCOME' ? t.amount : -t.amount);
-          });
-          balances[dStr] = running;
-      });
-      
-      return balances;
+      balances[dStr] = running;
+    });
+    
+    return balances;
   }, [transactions, startDate, endDate]);
-
-  // --- Chart Data Preparation ---
-  const chartData = useMemo(() => {
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-      return daysInMonth.map(day => {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          return {
-              day: format(day, 'd'), // For X Axis (1, 2, 3...)
-              fullDate: day,
-              balance: dailyBalances[dateStr] || 0
-          };
-      });
-  }, [monthStart, monthEnd, dailyBalances]);
-
-  // --- Sorting Categories (Income First) ---
+  
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
-        // Income (-1) comes before Expense (1)
-        if (a.type === 'INCOME' && b.type === 'EXPENSE') return -1;
-        if (a.type === 'EXPENSE' && b.type === 'INCOME') return 1;
-        return 0;
+      if (a.type === 'INCOME' && b.type === 'EXPENSE') return -1;
+      if (a.type === 'EXPENSE' && b.type === 'INCOME') return 1;
+      return 0;
     });
   }, [categories]);
 
-  // --- Helper Logic ---
   const isTransactionOnDate = (t: Transaction, date: Date) => {
     const tDate = parseISO(t.date);
     if (isSameDay(tDate, date)) return true;
@@ -153,24 +106,18 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
   const getCategoryTotal = (catName: string) => {
     let total = 0;
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    
     daysInMonth.forEach(day => {
-        const txs = getTransactionsForDate(day);
-        txs.forEach(t => {
-            if (
-                t.category.trim().toLowerCase() === catName.trim().toLowerCase() && 
-                t.includeInBalance
-            ) {
-                total += t.amount;
-            }
-        });
+      getTransactionsForDate(day).forEach(t => {
+        if (t.category.trim().toLowerCase() === catName.trim().toLowerCase() && t.includeInBalance) {
+          total += t.amount;
+        }
+      });
     });
     return total;
   };
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // --- Handlers for opening List Modal ---
   const openDayDetails = (date: Date) => {
     setListModalConfig({
       isOpen: true,
@@ -182,9 +129,7 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
   };
 
   const openCategoryDetails = (cat: Category) => {
-    // Format: "Дек. 25 г."
     const dateFormatted = capitalize(format(currentMonth, 'MMM yy', { locale: ru })) + ' г.';
-
     setListModalConfig({
       isOpen: true,
       title: cat.name,
@@ -198,24 +143,19 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
     setListModalConfig(prev => ({ ...prev, isOpen: false }));
   };
 
-  // --- Calculate Transactions for Modal ---
   const getModalTransactions = () => {
     if (!listModalConfig.isOpen) return [];
-    
     if (listModalConfig.filterType === 'DATE') {
        return getTransactionsForDate(listModalConfig.filterValue as Date);
     } else {
-       // Category Mode: Transactions for this category in Current Month
        const cat = listModalConfig.filterValue as Category;
        const results: Transaction[] = [];
        const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-       
        daysInMonth.forEach(day => {
-          const txs = getTransactionsForDate(day);
-          txs.forEach(t => {
-              if (t.category.trim().toLowerCase() === cat.name.trim().toLowerCase()) {
-                  results.push(t);
-              }
+          getTransactionsForDate(day).forEach(t => {
+            if (t.category.trim().toLowerCase() === cat.name.trim().toLowerCase()) {
+              results.push(t);
+            }
           });
        });
        return results.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -237,7 +177,6 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
       if (listModalConfig.filterType === 'CATEGORY' && listModalConfig.filterValue) {
           const cat = listModalConfig.filterValue as Category;
           updateCategory(cat.id, newName);
-          // Update the modal title immediately to reflect the change
           setListModalConfig(prev => ({
               ...prev,
               title: newName
@@ -245,44 +184,14 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
       }
   };
 
-  // Custom Tooltip for Chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-fin-card border border-fin-border p-2 rounded-lg text-xs shadow-none">
-          <p className="text-fin-textTert mb-1">{label} {format(currentMonth, 'MMM', { locale: ru })}</p>
-          <p className="text-fin-text font-bold">
-            {payload[0].value.toLocaleString('ru-RU')} ₽
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5 transition-colors">
       
-      {/* Stats Dashboard */}
-      <div 
-          className={`px-4 transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
-              isStatsOpen ? 'max-h-[500px] mb-4 opacity-100' : 'max-h-0 mb-0 opacity-0'
-          }`}
-      >
-        <div className="grid grid-cols-2 gap-3 py-2">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="bg-fin-card border border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-colors">
-              <span className="text-fin-textTert text-xs font-medium">{stat.label}</span>
-              <span className="text-fin-text text-xl font-medium tracking-tight">{stat.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Stats Dashboard REMOVED */}
 
-      {/* Main Content Area: Scrollable */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-4">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-4">
         
-        {/* Calendar Card (Separate Block) */}
+        {/* Calendar Card */}
         <div className="bg-fin-card rounded-3xl border border-fin-border relative overflow-hidden shadow-sm mb-6 transition-colors">
             
             {/* Calendar Header */}
@@ -307,7 +216,6 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
                     const hasTx = txs.length > 0;
                     const today = isToday(day);
                     const isCurrentMonth = isSameMonth(day, currentMonth);
-
                     const dateKey = format(day, 'yyyy-MM-dd');
                     const absoluteBalance = dailyBalances[dateKey] ?? 0;
                     const isCashGap = absoluteBalance < 0;
@@ -345,11 +253,16 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
             <div className="grid grid-cols-2 gap-3">
                 {sortedCategories.map(cat => {
                     const total = getCategoryTotal(cat.name);
+                    const isIncome = cat.type === 'INCOME';
                     return (
                         <div 
                             key={cat.id} 
                             onClick={() => openCategoryDetails(cat)}
-                            className="bg-fin-card border border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus"
+                            className={`rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border ${
+                                isIncome 
+                                ? 'bg-fin-bgSec border-fin-border hover:brightness-105 dark:bg-[#333131] dark:border-[#3c3c3c]' 
+                                : 'bg-fin-card border-fin-border'
+                            }`}
                         >
                             <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                             <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
@@ -370,48 +283,10 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
             </div>
         </div>
 
-        {/* BALANCE CHART BLOCK */}
-        <div className="px-1 mb-8">
-             <h3 className="text-lg font-semibold text-fin-text mb-4 tracking-wide px-1">Динамика баланса</h3>
-             <div className="bg-fin-card rounded-3xl border border-fin-border p-5 relative shadow-sm overflow-hidden h-[240px] [&_svg]:outline-none [&_:focus]:outline-none [&_.recharts-surface]:outline-none">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.4} />
-                       <XAxis 
-                          dataKey="day" 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: 'var(--color-text-tert)', fontSize: 10, fontWeight: 500 }}
-                          dy={10}
-                          interval="preserveStartEnd"
-                       />
-                       <YAxis 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: 'var(--color-text-tert)', fontSize: 10, fontWeight: 500 }}
-                          tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
-                       />
-                       <Tooltip 
-                          content={<CustomTooltip />} 
-                          cursor={false}
-                       />
-                       <Line 
-                          type="monotone" 
-                          dataKey="balance" 
-                          stroke="var(--color-accent)" 
-                          strokeWidth={2} 
-                          dot={false}
-                          activeDot={{ r: 5, fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2 }}
-                          animationDuration={1500}
-                       />
-                    </LineChart>
-                 </ResponsiveContainer>
-             </div>
-        </div>
+        {/* BALANCE CHART BLOCK REMOVED */}
 
       </div>
 
-      {/* --- MODALS --- */}
       <TransactionListModal 
           isOpen={listModalConfig.isOpen}
           onClose={closeListModal}
@@ -420,7 +295,6 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
           transactions={getModalTransactions()}
           mode="DEFAULT"
           onAdd={handleAddFromList}
-          // Pass the rename handler only if we are in Category mode
           onTitleChange={listModalConfig.filterType === 'CATEGORY' ? handleCategoryRename : undefined}
       />
 
@@ -434,7 +308,6 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({ isStatsOpen = false }) 
   );
 };
 
-// --- Sub-Components ---
 interface AddCategoryModalProps {
     onClose: () => void;
     onAdd: (name: string, type: TransactionType) => void;

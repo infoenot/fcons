@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Calendar as CalendarIcon, User } from 'lucide-react';
+import { MessageSquare, Calendar as CalendarIcon, User, PieChart } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -10,6 +10,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange }) => {
   const orderedTabs = [
     { id: 'chat', icon: MessageSquare, label: 'Assistant' },
     { id: 'calendar', icon: CalendarIcon, label: 'Calendar' },
+    { id: 'analytics', icon: PieChart, label: 'Analytics' }, // Add Analytics tab
     { id: 'account', icon: User, label: 'Profile' },
   ];
 

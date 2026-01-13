@@ -5,7 +5,9 @@ export enum Recurrence {
   DAILY = 'DAILY',
   WEEKLY = 'WEEKLY',
   MONTHLY = 'MONTHLY',
-  YEARLY = 'YEARLY'
+  YEARLY = 'YEARLY',
+  WEEKENDS = 'WEEKENDS',
+  WEEKDAYS = 'WEEKDAYS'
 }
 
 export type TransactionStatus = 'ACTUAL' | 'PLANNED';
@@ -18,7 +20,7 @@ export interface Transaction {
   category: string;
   status: TransactionStatus;
   recurrence: Recurrence;
-  recurrenceEndDate?: string; // ISO Date string YYYY-MM-DD (Required if recurrence != NONE)
+  recurrenceEndDate?: string; // ISO Date string YYYY-MM-DD
   includeInBalance: boolean;
   description?: string;
 }
