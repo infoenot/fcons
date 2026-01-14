@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat } from '../../context/ChatContext';
@@ -16,11 +16,11 @@ interface DisplayTransaction extends Transaction {
   displayDate: string;
 }
 
-// Remove isStatsOpen from props
 const CalendarScreen: React.FC = () => {
   const { transactions, categories, addCategory, openTransactionModal, updateCategory } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeView, setActiveView] = useState<'categories' | 'transactions'>('categories');
+  const [includePlanned, setIncludePlanned] = useState(true);
   
   const [listModalConfig, setListModalConfig] = useState<{
     isOpen: boolean;
@@ -38,6 +38,14 @@ const CalendarScreen: React.FC = () => {
   
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
 
+  // --- Filter Logic ---
+  const filteredTransactions = useMemo(() => {
+    if (includePlanned) {
+      return transactions;
+    }
+    return transactions.filter(t => t.status === 'ACTUAL');
+  }, [transactions, includePlanned]);
+
   // --- Calendar Logic ---
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -50,7 +58,7 @@ const CalendarScreen: React.FC = () => {
     const balances: Record<string, number> = {};
     const startStr = format(startDate, 'yyyy-MM-dd');
     let running = 0;
-    const sorted = [...transactions]
+    const sorted = [...filteredTransactions]
       .filter(t => t.includeInBalance)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -79,7 +87,7 @@ const CalendarScreen: React.FC = () => {
     });
     
     return balances;
-  }, [transactions, startDate, endDate]);
+  }, [filteredTransactions, startDate, endDate]);
   
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => {
@@ -104,9 +112,9 @@ const CalendarScreen: React.FC = () => {
     return false;
   };
 
-  const getTransactionsForDate = (date: Date) => {
-      return transactions.filter(t => isTransactionOnDate(t, date));
-  };
+  const getTransactionsForDate = useCallback((date: Date) => {
+      return filteredTransactions.filter(t => isTransactionOnDate(t, date));
+  }, [filteredTransactions]);
 
   const monthTransactions = useMemo(() => {
     const txs: DisplayTransaction[] = [];
@@ -119,7 +127,7 @@ const CalendarScreen: React.FC = () => {
     });
     
     return txs.sort((a, b) => parseISO(b.displayDate).getTime() - parseISO(a.displayDate).getTime());
-  }, [transactions, monthStart, monthEnd]);
+  }, [getTransactionsForDate, monthStart, monthEnd]);
 
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -265,19 +273,39 @@ const CalendarScreen: React.FC = () => {
 
         {/* Tabbed View */}
         <div className="px-1 mb-6">
-            <div className="flex items-center gap-6 mb-4 px-2">
-                <button 
-                    onClick={() => setActiveView('categories')} 
-                    className={`text-lg font-semibold transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text' : 'text-fin-textTert'}`}
-                >
-                    Категории
-                </button>
-                <button 
-                    onClick={() => setActiveView('transactions')} 
-                    className={`text-lg font-semibold transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text' : 'text-fin-textTert'}`}
-                >
-                    Транзакции
-                </button>
+            <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-6">
+                    <button 
+                        onClick={() => setActiveView('categories')} 
+                        className={`text-lg font-semibold transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text' : 'text-fin-textTert'}`}
+                    >
+                        Категории
+                    </button>
+                    <button 
+                        onClick={() => setActiveView('transactions')} 
+                        className={`text-lg font-semibold transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text' : 'text-fin-textTert'}`}
+                    >
+                        Транзакции
+                    </button>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-fin-textSec select-none w-8 text-right">{includePlanned ? 'Все' : 'Факт'}</span>
+                    <button
+                        onClick={() => setIncludePlanned(!includePlanned)}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            includePlanned ? 'bg-fin-accent' : 'bg-fin-border'
+                        }`}
+                        role="switch"
+                        aria-checked={includePlanned}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                includePlanned ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                        />
+                    </button>
+                </div>
             </div>
 
             {activeView === 'categories' ? (

@@ -6,15 +6,80 @@ import {
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Transaction } from '../../types';
+import { Transaction, SummaryData, CashGap } from '../../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AnalyticsScreen: React.FC = () => {
-  const { transactions, getSummary } = useFinance();
+  const { transactions } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  
-  // --- Data Logic (Moved from CalendarScreen) ---
-  const summary = getSummary(currentMonth);
+  const [includePlanned, setIncludePlanned] = useState(true);
+
+  const filteredTransactions = useMemo(() => {
+    if (includePlanned) {
+      return transactions;
+    }
+    return transactions.filter(t => t.status === 'ACTUAL');
+  }, [transactions, includePlanned]);
+
+  const summary: SummaryData = useMemo(() => {
+    const monthDate = currentMonth;
+    const start = startOfMonth(monthDate);
+    const end = endOfMonth(monthDate);
+    const today = new Date();
+    
+    let income = 0;
+    let expense = 0;
+    
+    filteredTransactions.forEach(t => {
+       if (!t.includeInBalance) return;
+       const tDate = parseISO(t.date);
+       if (tDate >= start && tDate <= end) {
+           if (t.type === 'INCOME') income += t.amount;
+           else expense += t.amount;
+       }
+    });
+
+    const sortedTxs = [...filteredTransactions]
+        .filter(t => t.includeInBalance)
+        .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+
+    let runningBalance = 0;
+    let cashGap: CashGap | null = null;
+    let balanceEndOfMonth = 0;
+
+    sortedTxs.forEach(t => {
+        if (t.type === 'INCOME') runningBalance += t.amount;
+        else runningBalance -= t.amount;
+        const tDate = parseISO(t.date);
+        if (runningBalance < 0 && !cashGap && differenceInCalendarDays(tDate, today) >= 0) {
+            cashGap = { date: t.date, amount: runningBalance };
+        }
+        if (tDate <= end) {
+            balanceEndOfMonth = runningBalance;
+        }
+    });
+
+    // We must find the balance at the START of the current month to show total balance correctly.
+    let startOfMonthBalance = 0;
+    sortedTxs.forEach(t => {
+        if (parseISO(t.date) < start) {
+            if (t.type === 'INCOME') startOfMonthBalance += t.amount;
+            else startOfMonthBalance -= t.amount;
+        }
+    });
+
+    const daysInMonth = differenceInCalendarDays(end, start) + 1;
+    return {
+      income,
+      expense,
+      balance: startOfMonthBalance + income - expense, // Corrected balance logic
+      projectedBalance: balanceEndOfMonth,
+      cashGap,
+      avgDailyIncome: daysInMonth > 0 ? income / daysInMonth : 0,
+      avgDailyExpense: daysInMonth > 0 ? expense / daysInMonth : 0
+    };
+  }, [currentMonth, filteredTransactions]);
+
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -28,7 +93,8 @@ const AnalyticsScreen: React.FC = () => {
   const getCashGapDisplay = () => {
     if (!summary.cashGap) return 'Нет';
     const days = differenceInCalendarDays(parseISO(summary.cashGap.date), new Date());
-    if (days <= 0) return 'Сегодня';
+    if (days < 0) return 'Просрочен';
+    if (days === 0) return 'Сегодня';
     return `${days} д.`;
   };
 
@@ -43,20 +109,19 @@ const AnalyticsScreen: React.FC = () => {
   
   const dailyBalances = useMemo(() => {
     const balances: Record<string, number> = {};
-    const startStr = format(startDate, 'yyyy-MM-dd');
     let running = 0;
-    const sorted = [...transactions]
+    const sorted = [...filteredTransactions]
       .filter(t => t.includeInBalance)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     for (const t of sorted) {
-      if (t.date < startStr) {
+      if (parseISO(t.date) < startDate) {
         running += (t.type === 'INCOME' ? t.amount : -t.amount);
       } else { break; }
     }
     
     const txMap = new Map<string, Transaction[]>();
-    sorted.filter(t => t.date >= startStr).forEach(t => {
+    sorted.filter(t => parseISO(t.date) >= startDate).forEach(t => {
       if(!txMap.has(t.date)) txMap.set(t.date, []);
       txMap.get(t.date)!.push(t);
     });
@@ -71,7 +136,7 @@ const AnalyticsScreen: React.FC = () => {
       balances[dStr] = running;
     });
     return balances;
-  }, [transactions, startDate, endDate]);
+  }, [filteredTransactions, startDate, endDate]);
 
   const chartData = useMemo(() => {
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -106,10 +171,30 @@ const AnalyticsScreen: React.FC = () => {
     <div className="flex flex-col h-full bg-fin-bg overflow-y-auto no-scrollbar mt-2.5 transition-colors px-4 pb-4">
       {/* Header */}
       <div className="flex items-center justify-between py-4 shrink-0">
-          <h2 className="text-lg font-semibold text-fin-text tracking-wide">{capitalize(format(currentMonth, 'LLLL yyyy', { locale: ru }))}</h2>
-          <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-2 text-fin-textSec hover:text-fin-text hover:bg-fin-bgSec rounded-btn border border-transparent hover:border-fin-border transition-all"><ChevronLeft size={20} /></button>
-              <button onClick={nextMonth} className="p-2 text-fin-textSec hover:text-fin-text hover:bg-fin-bgSec rounded-btn border border-transparent hover:border-fin-border transition-all"><ChevronRight size={20} /></button>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-fin-text tracking-wide">{capitalize(format(currentMonth, 'LLLL yyyy', { locale: ru }))}</h2>
+            <div className="flex gap-1">
+                <button onClick={prevMonth} className="p-2 text-fin-textSec hover:text-fin-text hover:bg-fin-bgSec rounded-btn border border-transparent hover:border-fin-border transition-all"><ChevronLeft size={20} /></button>
+                <button onClick={nextMonth} className="p-2 text-fin-textSec hover:text-fin-text hover:bg-fin-bgSec rounded-btn border border-transparent hover:border-fin-border transition-all"><ChevronRight size={20} /></button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-fin-textSec select-none w-8 text-right">{includePlanned ? 'Все' : 'Факт'}</span>
+            <button
+                onClick={() => setIncludePlanned(!includePlanned)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    includePlanned ? 'bg-fin-accent' : 'bg-fin-border'
+                }`}
+                role="switch"
+                aria-checked={includePlanned}
+            >
+                <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        includePlanned ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                />
+            </button>
           </div>
       </div>
         
