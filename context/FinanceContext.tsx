@@ -15,6 +15,7 @@ interface FinanceContextType {
   addTransactions: (ts: Omit<Transaction, 'id'>[]) => void;
   updateTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
+  deleteTransactions: (ids: string[]) => void;
   addCategory: (name: string, type: TransactionType) => void;
   updateCategory: (id: string, newName: string) => void;
   getSummary: (monthDate: Date) => SummaryData;
@@ -92,6 +93,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const deleteTransaction = (id: string) => {
     setTransactions(prev => prev.filter(tx => tx.id !== id));
+  };
+
+  const deleteTransactions = (ids: string[]) => {
+    setTransactions(prev => prev.filter(tx => !ids.includes(tx.id)));
   };
 
   const addCategory = (name: string, type: TransactionType) => {
@@ -180,7 +185,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   return (
     <FinanceContext.Provider value={{ 
       transactions, categories, addTransaction, addTransactions, updateTransaction, deleteTransaction,
-      addCategory, updateCategory, getSummary, pendingConfirmations,
+      deleteTransactions, addCategory, updateCategory, getSummary, pendingConfirmations,
       modalState, openTransactionModal, closeTransactionModal
     }}>
       {children}

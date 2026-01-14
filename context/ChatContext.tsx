@@ -13,6 +13,7 @@ export interface Message {
   transactions?: Transaction[]; // For interactive cards in chat
   imageUrl?: string; // For uploaded images
   prompt?: {
+    type: 'show' | 'delete';
     question: string;
     transactions: Transaction[]; // Store transactions for confirmation
     responded?: boolean; // Flag to disable buttons after response

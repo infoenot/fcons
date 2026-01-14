@@ -27,7 +27,7 @@ export default function ChatScreen() {
   const recordingStartTimeRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { openTransactionModal, transactions } = useFinance();
+  const { openTransactionModal, transactions, deleteTransactions } = useFinance();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -171,10 +171,31 @@ export default function ChatScreen() {
 
   const handleSendText = async () => {
     if (!input.trim()) return;
-
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input, timestamp: new Date() };
-    const history = getHistory();
+    
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    const isDeleteCommand = /удали|удалить|убери/.test(input.toLowerCase());
 
+    if (isDeleteCommand && lastMessage && lastMessage.role === 'assistant' && lastMessage.transactions && lastMessage.transactions.length > 0) {
+        setMessages(prev => [...prev, userMsg]);
+        const transactionsToDelete = lastMessage.transactions;
+        const confirmationMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "",
+            timestamp: new Date(),
+            prompt: {
+                type: 'delete',
+                question: `Вы уверены, что хотите удалить ${transactionsToDelete.length} транзакций? Это действие необратимо.`,
+                transactions: transactionsToDelete,
+            }
+        };
+        setMessages(prev => [...prev, confirmationMsg]);
+        setInput('');
+        return; 
+    }
+    
+    const history = getHistory();
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
@@ -193,32 +214,42 @@ export default function ChatScreen() {
     }
   };
 
-  const handlePromptResponse = (messageId: string, show: boolean) => {
+  const handlePromptResponse = (messageId: string, confirmed: boolean) => {
     const originalMessage = messages.find(m => m.id === messageId);
     if (!originalMessage || !originalMessage.prompt || originalMessage.prompt.responded) return;
 
-    // Mark the prompt as responded to disable buttons
     setMessages(prev => prev.map(m => 
         m.id === messageId 
             ? { ...m, prompt: { ...m.prompt!, responded: true } } 
             : m
     ));
+    
+    const { type, transactions: promptTransactions } = originalMessage.prompt;
 
-    if (show) {
-        // Add a new message with the transaction cards
-        setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: "Вот запрошенные транзакции:",
-            timestamp: new Date(),
-            transactions: originalMessage.prompt!.transactions
-        }]);
+    if (confirmed) {
+        if (type === 'show') {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: "Вот запрошенные транзакции:",
+                timestamp: new Date(),
+                transactions: promptTransactions
+            }]);
+        } else if (type === 'delete') {
+            const idsToDelete = promptTransactions.map(t => t.id);
+            deleteTransactions(idsToDelete);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: `Удалил ${idsToDelete.length} транзакций.`,
+                timestamp: new Date(),
+            }]);
+        }
     } else {
-        // Add a simple "Ok" message
         setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'assistant',
-            content: "Ок.",
+            content: type === 'delete' ? "Удаление отменено." : "Ок.",
             timestamp: new Date()
         }]);
     }
@@ -267,13 +298,14 @@ export default function ChatScreen() {
                         content: "",
                         timestamp: new Date(),
                         prompt: {
+                            type: 'show',
                             question,
                             transactions: filtered,
                         }
                     }]);
                  }
                  setLoading(false);
-                 return; // Stop further processing and wait for user prompt response
+                 return;
              } else if (call.name === 'getBalance') {
                  const { date } = call.args;
                  let runningBalance = 0;
@@ -338,7 +370,7 @@ export default function ChatScreen() {
           const userMsg: Message = { 
             id: Date.now().toString(), 
             role: 'user', 
-            content: "", // The image is the content
+            content: "",
             timestamp: new Date(),
             imageUrl: imageUrl,
           };
@@ -356,7 +388,7 @@ export default function ChatScreen() {
       };
 
       reader.readAsDataURL(file);
-      e.target.value = ''; // Clear file input to allow re-uploading the same file
+      e.target.value = '';
   };
   
   const formatDuration = (seconds?: number) => {
@@ -385,7 +417,6 @@ export default function ChatScreen() {
     <div className="flex flex-col h-full bg-fin-bg overflow-hidden mt-2.5">
       <div className="flex-1 px-4 pb-3 pt-4 min-h-0 flex flex-col gap-4">
         
-        {/* Chat Message List */}
         <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-3">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -438,8 +469,18 @@ export default function ChatScreen() {
                                 <p className="text-sm font-medium">{msg.prompt.question}</p>
                                 {!msg.prompt.responded && (
                                     <div className="flex gap-2">
-                                        <button onClick={() => handlePromptResponse(msg.id, true)} className="px-4 py-1.5 bg-fin-success/10 border border-fin-success/30 text-fin-success rounded-btn text-xs font-bold hover:bg-fin-success/20 transition-colors">Да</button>
-                                        <button onClick={() => handlePromptResponse(msg.id, false)} className="px-4 py-1.5 bg-fin-bgSec border border-fin-border text-fin-textSec rounded-btn text-xs font-bold hover:bg-fin-card transition-colors">Нет</button>
+                                        <button 
+                                            onClick={() => handlePromptResponse(msg.id, true)}
+                                            className={`px-4 py-1.5 rounded-btn text-xs font-bold transition-colors ${
+                                                msg.prompt.type === 'delete' 
+                                                ? 'bg-fin-error/10 border border-fin-error/30 text-fin-error hover:bg-fin-error/20' 
+                                                : 'bg-fin-success/10 border border-fin-success/30 text-fin-success hover:bg-fin-success/20'
+                                            }`}
+                                        >Да</button>
+                                        <button 
+                                            onClick={() => handlePromptResponse(msg.id, false)} 
+                                            className="px-4 py-1.5 bg-fin-bgSec border border-fin-border text-fin-textSec rounded-btn text-xs font-bold hover:bg-fin-card transition-colors"
+                                        >Нет</button>
                                     </div>
                                 )}
                             </div>
@@ -474,7 +515,6 @@ export default function ChatScreen() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <div className="bg-fin-card rounded-3xl border border-fin-border p-4 flex items-end justify-between gap-3 shadow-sm shrink-0">
           <input type="file" ref={galleryInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
           <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleFileUpload} />
