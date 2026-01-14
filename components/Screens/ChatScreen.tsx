@@ -193,13 +193,42 @@ export default function ChatScreen() {
     }
   };
 
-  const processAIResult = async (result: any, foundTransactions?: Transaction[]) => {
+  const handlePromptResponse = (messageId: string, show: boolean) => {
+    const originalMessage = messages.find(m => m.id === messageId);
+    if (!originalMessage || !originalMessage.prompt || originalMessage.prompt.responded) return;
+
+    // Mark the prompt as responded to disable buttons
+    setMessages(prev => prev.map(m => 
+        m.id === messageId 
+            ? { ...m, prompt: { ...m.prompt!, responded: true } } 
+            : m
+    ));
+
+    if (show) {
+        // Add a new message with the transaction cards
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: "Вот запрошенные транзакции:",
+            timestamp: new Date(),
+            transactions: originalMessage.prompt!.transactions
+        }]);
+    } else {
+        // Add a simple "Ok" message
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: "Ок.",
+            timestamp: new Date()
+        }]);
+    }
+  };
+
+  const processAIResult = async (result: any) => {
       const responseText = result.text; 
       const functionCalls = result.functionCalls;
       
       const drafts: Partial<Transaction>[] = [];
-      let systemResponseData: string | null = null;
-      let nextFoundTransactions: Transaction[] | undefined = foundTransactions;
 
       if (functionCalls && functionCalls.length > 0) {
         for (const call of functionCalls) {
@@ -225,20 +254,30 @@ export default function ChatScreen() {
                  if (endDate) filtered = filtered.filter(t => t.date <= endDate);
 
                  if (filtered.length === 0) {
-                     systemResponseData = "Транзакции не найдены за указанный период.";
+                    setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: "Транзакции не найдены.", timestamp: new Date() }]);
                  } else {
-                     const totalSum = filtered.reduce((sum, t) => sum + t.amount, 0);
-                     const limited = filtered.slice(-20);
-                     nextFoundTransactions = filtered; // Keep all results to show as cards
-                     systemResponseData = `Найдено транзакций: ${filtered.length}. ОБЩАЯ СУММА: ${totalSum} ₽.\nСписок:\n` + limited.map(t => 
-                        `- ${t.date} | ${t.type === 'INCOME' ? 'Доход' : 'Расход'} | ${t.category} | ${t.amount}₽`
-                     ).join('\n');
-                     if (filtered.length > 20) systemResponseData += `\n...и еще ${filtered.length - 20} записей.`;
+                    const totalSum = filtered.reduce((sum, t) => sum + (t.type === 'INCOME' ? t.amount : -t.amount), 0);
+                    const question = filtered.length > 30 
+                      ? `Найдено ${filtered.length} транзакций. Точно показать?`
+                      : `Найдено ${filtered.length} транзакций на общую сумму ${totalSum.toLocaleString()} ₽. Показать их?`;
+                    
+                    setMessages(prev => [...prev, {
+                        id: (Date.now() + 1).toString(),
+                        role: 'assistant',
+                        content: "",
+                        timestamp: new Date(),
+                        prompt: {
+                            question,
+                            transactions: filtered,
+                        }
+                    }]);
                  }
+                 setLoading(false);
+                 return; // Stop further processing and wait for user prompt response
              } else if (call.name === 'getBalance') {
                  const { date } = call.args;
+                 let runningBalance = 0;
                  if (date) {
-                    let runningBalance = 0;
                     const sorted = [...transactions]
                       .filter(t => t.includeInBalance)
                       .sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime());
@@ -249,25 +288,15 @@ export default function ChatScreen() {
                             else runningBalance -= t.amount;
                         }
                     }
-                    systemResponseData = `Баланс на дату ${date} составляет: ${runningBalance} ₽.`;
                  }
+                 setMessages(prev => [...prev, {
+                     id: (Date.now() + 1).toString(),
+                     role: 'assistant',
+                     content: `Баланс на ${date} составляет: ${runningBalance.toLocaleString()} ₽.`,
+                     timestamp: new Date()
+                 }]);
              }
         }
-      }
-
-      if (systemResponseData !== null) {
-          try {
-             const history = getHistory();
-             const dataPrompt = `[SYSTEM_DATA_RESPONSE]\n${systemResponseData}\n\nОтветь пользователю на основе этих данных. Если это был вопрос о сумме, обязательно назови итоговую цифру. Сделай ответ кратким.`;
-             const nextResult = await generateAIResponse(dataPrompt, history);
-             // Pass found transactions to the next recursion level
-             await processAIResult(nextResult, nextFoundTransactions);
-          } catch (e) {
-             console.error(e);
-             setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: "Ошибка анализа данных.", timestamp: new Date() }]);
-             setLoading(false);
-          }
-          return;
       }
 
       if (drafts.length > 0) {
@@ -280,9 +309,8 @@ export default function ChatScreen() {
             role: 'assistant', 
             content: responseText,
             timestamp: new Date(),
-            transactions: foundTransactions // Attach cards here
           }]);
-      } else if (drafts.length === 0) {
+      } else if (drafts.length === 0 && (!functionCalls || functionCalls.length === 0)) {
           setMessages(prev => [...prev, { 
             id: (Date.now() + 1).toString(), 
             role: 'assistant', 
@@ -404,6 +432,18 @@ export default function ChatScreen() {
                    ) : (
                      <div className="space-y-3">
                         {msg.content && <div>{msg.content}</div>}
+
+                        {msg.prompt && (
+                            <div className="mt-2 space-y-3 animate-in fade-in">
+                                <p className="text-sm font-medium">{msg.prompt.question}</p>
+                                {!msg.prompt.responded && (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handlePromptResponse(msg.id, true)} className="px-4 py-1.5 bg-fin-success/10 border border-fin-success/30 text-fin-success rounded-btn text-xs font-bold hover:bg-fin-success/20 transition-colors">Да</button>
+                                        <button onClick={() => handlePromptResponse(msg.id, false)} className="px-4 py-1.5 bg-fin-bgSec border border-fin-border text-fin-textSec rounded-btn text-xs font-bold hover:bg-fin-card transition-colors">Нет</button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         
                         {msg.transactions && msg.transactions.length > 0 && (
                           <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">

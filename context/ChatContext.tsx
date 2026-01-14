@@ -12,6 +12,11 @@ export interface Message {
   toolCall?: any;
   transactions?: Transaction[]; // For interactive cards in chat
   imageUrl?: string; // For uploaded images
+  prompt?: {
+    question: string;
+    transactions: Transaction[]; // Store transactions for confirmation
+    responded?: boolean; // Flag to disable buttons after response
+  };
 }
 
 interface ChatContextType {
