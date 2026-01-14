@@ -51,21 +51,6 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
     openTransactionModal('EDIT', t);
   };
 
-  const handleDelete = (id: string) => {
-    const t = transactions.find(tx => tx.id === id);
-    if (confirm('Удалить эту операцию?')) {
-      deleteTransaction(id);
-      if (t) {
-        setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: `Удалил операцию: ${t.category}, сумма ${t.amount} ₽.`,
-            timestamp: new Date()
-        }]);
-      }
-    }
-  };
-
   const handleConfirm = (t: Transaction) => {
     updateTransaction({ ...t, status: 'ACTUAL' });
     setMessages(prev => [...prev, {
@@ -156,61 +141,62 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-6">
+        <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pb-6">
           {transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-fin-textTert opacity-60">
               <span className="text-3xl mb-2">📭</span>
               <span className="text-sm">Нет операций</span>
             </div>
           ) : (
-            transactions.map(t => (
-              <div key={t.id} className="flex flex-col gap-2 p-4 bg-fin-bgSec rounded-btn border border-fin-border group">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-1 h-8 rounded-full ${t.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-error'}`}></div>
-                    <div>
-                      <p className="font-semibold text-fin-text text-sm flex items-center gap-2">
-                        {t.category}
-                        {t.recurrence !== 'NONE' && (<Repeat size={12} className="text-fin-textTert" />)}
-                      </p>
-                      <div className="flex flex-col">
-                          {t.description && <p className="text-xs text-fin-textTert">{t.description}</p>}
-                          {mode === 'NOTIFICATIONS' && (
-                              <p className="text-[10px] text-fin-textTert font-medium uppercase tracking-wider mt-0.5">
-                                  {format(parseISO(t.date), 'd MMM', { locale: ru })}
-                              </p>
-                          )}
-                      </div>
-                      {t.status === 'PLANNED' && mode !== 'NOTIFICATIONS' && (
-                          <span className="text-[10px] bg-fin-border px-2 py-0.5 rounded text-fin-textSec font-bold uppercase tracking-wider mt-1 inline-block">План</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className={`text-sm font-medium ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-                    {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} ₽
-                  </span>
-                </div>
+            transactions.map(t => {
+                if (mode === 'NOTIFICATIONS') {
+                    return (
+                        <div key={t.id} className="flex flex-col gap-2 p-3 bg-fin-bgSec rounded-xl border border-fin-border">
+                            <div onClick={() => handleEdit(t)} className="flex justify-between items-center cursor-pointer">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-fin-text text-sm">{t.category}</p>
+                                    <p className="text-xs text-fin-textTert font-medium mt-0.5">
+                                        {format(parseISO(t.date), 'd MMMM, eeee', { locale: ru })}
+                                    </p>
+                                </div>
+                                <span className={`text-sm font-medium ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                    {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} ₽
+                                </span>
+                            </div>
+                            <div className="flex justify-end pt-2 border-t border-fin-border/30 mt-1">
+                                <button 
+                                    onClick={() => handleConfirm(t)}
+                                    className="flex-1 py-1.5 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95"
+                                >
+                                    <Check size={14} strokeWidth={2.5} /> <span className="text-xs font-bold">Подтвердить</span>
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
 
-                {/* Actions */}
-                <div className={`flex justify-end gap-2 pt-2 border-t border-fin-border/30 mt-1 transition-opacity ${mode === 'NOTIFICATIONS' ? 'opacity-100' : 'opacity-100 sm:opacity-0 group-hover:opacity-100'}`}>
-                   {mode === 'NOTIFICATIONS' && (
-                       <button 
-                           onClick={() => handleConfirm(t)}
-                           className="flex-1 py-1.5 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95 mr-auto"
-                       >
-                           <Check size={14} strokeWidth={2.5} /> <span className="text-xs font-bold">Подтвердить</span>
-                       </button>
-                   )}
-                   
-                   <button onClick={() => handleEdit(t)} className="p-1.5 text-fin-textSec hover:text-fin-accent hover:bg-fin-accent/10 rounded-md transition-colors">
-                       <Edit2 size={16} />
-                   </button>
-                   <button onClick={() => handleDelete(t.id)} className="p-1.5 text-fin-textSec hover:text-fin-error hover:bg-fin-error/10 rounded-md transition-colors">
-                       <Trash2 size={16} />
-                   </button>
-                </div>
-              </div>
-            ))
+                return (
+                    <div 
+                        key={t.id}
+                        onClick={() => handleEdit(t)}
+                        className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 cursor-pointer hover:bg-fin-card transition-all"
+                    >
+                        <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-fin-text text-sm truncate flex items-center gap-2">
+                                {t.category}
+                                {t.recurrence !== 'NONE' && (<Repeat size={12} className="text-fin-textTert" />)}
+                            </p>
+                            {t.description && <p className="text-xs text-fin-textTert truncate">{t.description}</p>}
+                            {t.status === 'PLANNED' && (
+                                <span className="text-[10px] bg-fin-border px-2 py-0.5 rounded text-fin-textSec font-bold uppercase tracking-wider mt-1 inline-block">План</span>
+                            )}
+                        </div>
+                        <span className={`font-medium text-sm ml-auto ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                            {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} ₽
+                        </span>
+                    </div>
+                )
+            })
           )}
         </div>
 

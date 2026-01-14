@@ -358,7 +358,6 @@ const CalendarScreen: React.FC = () => {
                                 onClick={() => openTransactionModal('EDIT', t)} 
                                 className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 cursor-pointer hover:bg-fin-card transition-all"
                             >
-                                <div className={`w-1 h-8 rounded-full ${t.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-error'}`}></div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-fin-text text-sm truncate">{t.category}</div>
                                     <div className="text-xs text-fin-textTert">{capitalize(format(parseISO(t.displayDate), 'd MMMM, eeee', { locale: ru }))}</div>

@@ -27,7 +27,7 @@ export default function ChatScreen() {
   const recordingStartTimeRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { openTransactionModal, transactions, deleteTransaction } = useFinance();
+  const { openTransactionModal, transactions } = useFinance();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -412,17 +412,6 @@ export default function ChatScreen() {
                                  key={tx.id} 
                                  transaction={tx} 
                                  onEdit={() => openTransactionModal('EDIT', tx)}
-                                 onDelete={() => {
-                                   if(confirm('Удалить операцию?')) {
-                                     deleteTransaction(tx.id);
-                                     setMessages(prev => [...prev, {
-                                       id: Date.now().toString(),
-                                       role: 'assistant',
-                                       content: `Удалил ${tx.category} на сумму ${tx.amount} ₽.`,
-                                       timestamp: new Date()
-                                     }]);
-                                   }
-                                 }}
                                />
                              ))}
                           </div>
@@ -497,42 +486,21 @@ export default function ChatScreen() {
 interface ChatTransactionCardProps {
   transaction: Transaction;
   onEdit: () => void;
-  onDelete: () => void;
 }
 
-const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, onEdit, onDelete }) => {
+const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, onEdit }) => {
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   return (
-    <div className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex flex-col gap-2 max-w-[280px]">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className={`w-1 h-6 rounded-full ${transaction.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-error'}`} />
-          <div className="min-w-0">
-            <div className="text-xs font-bold text-fin-text truncate">{transaction.category}</div>
-            <div className="text-[9px] text-fin-textTert font-medium uppercase tracking-wider">
-              {format(parseISO(transaction.date), 'd MMM', { locale: ru })}
-            </div>
-          </div>
-        </div>
-        <div className="text-xs font-bold text-fin-text">
-          {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString()} ₽
-        </div>
+    <div 
+      onClick={onEdit}
+      className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 max-w-[280px] cursor-pointer hover:bg-fin-card transition-all"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-fin-text text-sm truncate">{transaction.category}</div>
+        <div className="text-xs text-fin-textTert">{capitalize(format(parseISO(transaction.date), 'd MMMM', { locale: ru }))}</div>
       </div>
-      
-      <div className="flex gap-2 pt-1 border-t border-fin-border/30 justify-end">
-        <button 
-          onClick={onEdit}
-          className="p-1.5 text-fin-textTert hover:text-fin-accent hover:bg-fin-accent/5 rounded-md transition-all flex items-center gap-1"
-        >
-          <Edit2 size={12} />
-          <span className="text-[10px]">Изм.</span>
-        </button>
-        <button 
-          onClick={onDelete}
-          className="p-1.5 text-fin-textTert hover:text-fin-error hover:bg-fin-error/5 rounded-md transition-all flex items-center gap-1"
-        >
-          <Trash2 size={12} />
-          <span className="text-[10px]">Удал.</span>
-        </button>
+      <div className={`font-medium text-sm ${transaction.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+        {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString('ru-RU')} ₽
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ interface TransactionDraft extends Partial<Transaction> {
 }
 
 const TransactionModal: React.FC = () => {
-  const { modalState, closeTransactionModal, addTransaction, addTransactions, updateTransaction, addCategory, categories } = useFinance();
+  const { modalState, closeTransactionModal, addTransaction, addTransactions, updateTransaction, addCategory, categories, deleteTransaction } = useFinance();
   const { isOpen, mode, drafts: initialDrafts } = modalState;
   const { setMessages } = useChat();
 
@@ -152,6 +152,21 @@ const TransactionModal: React.FC = () => {
     closeTransactionModal();
   };
 
+  const handleDelete = () => {
+      if (mode === 'EDIT' && activeDraft.id) {
+          if (confirm('Вы уверены, что хотите удалить эту операцию?')) {
+              deleteTransaction(activeDraft.id);
+              setMessages(prev => [...prev, { 
+                  id: Date.now().toString(), 
+                  role: 'assistant', 
+                  content: `Удалил операцию: ${activeDraft.category}, ${activeDraft.amount} ₽.`, 
+                  timestamp: new Date() 
+              }]);
+              closeTransactionModal();
+          }
+      }
+  };
+
   if (!isOpen || !activeDraft) return null;
 
   const isPeriodic = activeDraft.recurrence !== Recurrence.NONE;
@@ -265,7 +280,18 @@ const TransactionModal: React.FC = () => {
                  <button onClick={() => updateActiveDraft('includeInBalance', !activeDraft.includeInBalance)} className={`rounded-xl py-2 border text-[10px] font-bold uppercase transition-all ${activeDraft.includeInBalance ? 'bg-fin-success/10 border-fin-success/30 text-fin-success' : 'bg-fin-bgSec border-fin-border/50 text-fin-textTert'}`}>{activeDraft.includeInBalance ? 'В балансе' : 'Скрыто'}</button>
             </div>
 
-            <button onClick={handleSaveAll} disabled={!activeDraft.amount || activeDraft.amount <= 0 || !activeDraft.category} className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg ${!activeDraft.amount || activeDraft.amount <= 0 || !activeDraft.category ? 'bg-fin-bgSec text-fin-textTert border border-fin-border' : 'bg-fin-accent text-white'}`}><Check size={18} strokeWidth={3} /><span>Сохранить</span></button>
+            <div className="flex items-center gap-3">
+                <button onClick={handleSaveAll} disabled={!activeDraft.amount || activeDraft.amount <= 0 || !activeDraft.category} className={`flex-1 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${!activeDraft.amount || activeDraft.amount <= 0 || !activeDraft.category ? 'bg-fin-bgSec text-fin-textTert border border-fin-border' : 'bg-fin-accent text-white'}`}><Check size={18} strokeWidth={3} /><span>Сохранить</span></button>
+                {mode === 'EDIT' && (
+                    <button 
+                        onClick={handleDelete} 
+                        className="p-4 bg-fin-bgSec text-fin-error rounded-xl border border-fin-border hover:bg-fin-error/10 transition-colors"
+                        aria-label="Удалить операцию"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                )}
+            </div>
         </div>
       </div>
     </div>,
