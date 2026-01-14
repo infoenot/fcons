@@ -11,8 +11,8 @@ interface ModalState {
 interface FinanceContextType {
   transactions: Transaction[];
   categories: Category[];
-  addTransaction: (t: Omit<Transaction, 'id'>) => void;
-  addTransactions: (ts: Omit<Transaction, 'id'>[]) => void;
+  addTransaction: (t: Omit<Transaction, 'id'>) => Transaction;
+  addTransactions: (ts: Omit<Transaction, 'id'>[]) => Transaction[];
   updateTransaction: (t: Transaction) => void;
   deleteTransaction: (id: string) => void;
   deleteTransactions: (ids: string[]) => void;
@@ -74,17 +74,19 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     setPendingConfirmations(pending);
   }, [transactions]);
 
-  const addTransaction = (t: Omit<Transaction, 'id'>) => {
+  const addTransaction = (t: Omit<Transaction, 'id'>): Transaction => {
     const newTx: Transaction = { ...t, id: Math.random().toString(36).substr(2, 9) };
     setTransactions(prev => [...prev, newTx]);
+    return newTx;
   };
 
-  const addTransactions = (ts: Omit<Transaction, 'id'>[]) => {
+  const addTransactions = (ts: Omit<Transaction, 'id'>[]): Transaction[] => {
     const newTxs: Transaction[] = ts.map(t => ({ 
       ...t, 
       id: Math.random().toString(36).substr(2, 9) 
     }));
     setTransactions(prev => [...prev, ...newTxs]);
+    return newTxs;
   };
 
   const updateTransaction = (t: Transaction) => {

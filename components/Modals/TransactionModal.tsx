@@ -89,53 +89,70 @@ const TransactionModal: React.FC = () => {
   const handleSaveAll = () => {
     const allValid = drafts.every(d => d.amount && d.amount > 0 && d.category && d.date);
     if (!allValid) return;
-
-    let totalCreated = 0;
+  
+    const createdOrUpdatedTransactions: Transaction[] = [];
     const processedCategories = new Set<string>();
-
+  
     drafts.forEach(d => {
-       const catName = d.category!.trim(); 
-       const catType = d.type!;
-       const uniqueKey = `${catName.toLowerCase()}-${catType}`;
-
-       if (!categories.some(c => c.name.toLowerCase() === catName.toLowerCase() && c.type === catType) && !processedCategories.has(uniqueKey)) {
-           addCategory(catName, catType);
-           processedCategories.add(uniqueKey);
-           setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: `Создал новую категорию: ${catName}.`, timestamp: new Date() }]);
-       }
-
-       const baseData = {
-         type: d.type!,
-         amount: Number(d.amount),
-         category: catName,
-         status: d.status!,
-         recurrence: d.recurrence || Recurrence.NONE,
-         includeInBalance: d.includeInBalance ?? true,
-         description: d.description || '' 
-       };
-       
-       const finalRecurrence = baseData.recurrence;
-
-       if (mode === 'EDIT' && d.id) {
-          updateTransaction({ ...baseData, id: d.id, date: d.date! } as Transaction);
-          totalCreated++;
-       } else if (finalRecurrence === Recurrence.NONE) {
-          addTransaction({ ...baseData, date: d.date! });
-          totalCreated++;
-       } else {
-          const dates = generatePeriodicDates(d.date!, d.recurrenceEndDate!, finalRecurrence);
-          const batch = dates.map(date => ({ ...baseData, date }));
-          addTransactions(batch);
-          totalCreated += batch.length;
-       }
+      const catName = d.category!.trim();
+      const catType = d.type!;
+      const uniqueKey = `${catName.toLowerCase()}-${catType}`;
+  
+      if (!categories.some(c => c.name.toLowerCase() === catName.toLowerCase() && c.type === catType) && !processedCategories.has(uniqueKey)) {
+        addCategory(catName, catType);
+        processedCategories.add(uniqueKey);
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: `Создал новую категорию: ${catName}.`, timestamp: new Date() }]);
+      }
+  
+      const baseData = {
+        type: d.type!,
+        amount: Number(d.amount),
+        category: catName,
+        status: d.status!,
+        recurrence: d.recurrence || Recurrence.NONE,
+        includeInBalance: d.includeInBalance ?? true,
+        description: d.description || ''
+      };
+  
+      const finalRecurrence = baseData.recurrence;
+  
+      if (mode === 'EDIT' && d.id) {
+        const updatedTx = { ...baseData, id: d.id, date: d.date! } as Transaction;
+        updateTransaction(updatedTx);
+        createdOrUpdatedTransactions.push(updatedTx);
+      } else if (finalRecurrence === Recurrence.NONE) {
+        const newTx = addTransaction({ ...baseData, date: d.date! });
+        createdOrUpdatedTransactions.push(newTx);
+      } else {
+        const dates = generatePeriodicDates(d.date!, d.recurrenceEndDate!, finalRecurrence);
+        const batch = dates.map(date => ({ ...baseData, date }));
+        const newTxs = addTransactions(batch);
+        createdOrUpdatedTransactions.push(...newTxs);
+      }
     });
-
-    const isMultiple = totalCreated > 1;
-    let message = isMultiple 
-        ? `Создано ${totalCreated} операций на общую сумму ${drafts.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) * (totalCreated / drafts.length)} ₽.`
-        : `Записал ${activeDraft.type === 'INCOME' ? 'доход' : 'расход'} в категорию ${activeDraft.category} на сумму ${activeDraft.amount} ₽.`;
-
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: message, timestamp: new Date() }]);
+  
+    const totalCount = createdOrUpdatedTransactions.length;
+    let messageContent: string;
+    let transactionsToShow: Transaction[] | undefined = undefined;
+  
+    if (totalCount === 1) {
+      const tx = createdOrUpdatedTransactions[0];
+      const actionText = mode === 'EDIT' ? 'Обновил операцию' : 'Записал';
+      messageContent = `${actionText} в категории ${tx.category}.`;
+      transactionsToShow = [tx];
+    } else {
+      const totalAmount = createdOrUpdatedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+      messageContent = `Создано ${totalCount} операций на общую сумму ${totalAmount.toLocaleString('ru-RU')} ₽.`;
+    }
+  
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: messageContent,
+      timestamp: new Date(),
+      transactions: transactionsToShow
+    }]);
+  
     closeTransactionModal();
   };
 

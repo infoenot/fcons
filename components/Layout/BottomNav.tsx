@@ -15,7 +15,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange }) => {
   ];
 
   return (
-    <div className="bg-fin-bg/75 backdrop-blur-xl pt-2 pb-safe px-6 h-[72px] flex justify-between items-center z-40 w-full shrink-0 transition-colors duration-300">
+    <div className="bg-fin-bg/40 backdrop-blur-3xl pt-2 pb-safe px-6 h-[72px] flex justify-between items-center z-40 w-full shrink-0 transition-colors duration-300">
       {orderedTabs.map((tab) => {
         const isActive = currentTab === tab.id;
         return (
