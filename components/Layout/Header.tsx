@@ -15,7 +15,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <div className="bg-fin-bg/80 backdrop-blur-lg sticky top-0 z-50 pt-8 pb-2 px-6 transition-all duration-300">
+      <div className="bg-fin-bg/75 backdrop-blur-xl sticky top-0 z-50 pt-8 pb-2 px-6 transition-all duration-300">
         <div className="flex justify-between items-center">
           {/* Remove onClick handler and ChevronDown icon */}
           <div className="flex items-center gap-3 select-none">
