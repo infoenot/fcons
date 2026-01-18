@@ -134,7 +134,12 @@ export default function ChatScreen() {
                 await processAIResult(result);
             } catch (e) {
                 console.error(e);
-                setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: "Ошибка обработки аудио.", timestamp: new Date() }]);
+                let errorMessage = "Ошибка обработки аудио.";
+                if (e instanceof Error && e.message === "API_KEY_NOT_CONFIGURED") {
+                    // Fix: Update error message to reference API_KEY instead of VITE_API_KEY.
+                    errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
+                }
+                setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: errorMessage, timestamp: new Date() }]);
                 setLoading(false);
             }
         };
@@ -204,10 +209,15 @@ export default function ChatScreen() {
       const result = await generateAIResponse(userMsg.content, history);
       await processAIResult(result);
     } catch (error) {
+      let errorMessage = "Ошибка соединения.";
+      if (error instanceof Error && error.message === "API_KEY_NOT_CONFIGURED") {
+        // Fix: Update error message to reference API_KEY instead of VITE_API_KEY.
+        errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
+      }
       setMessages(prev => [...prev, { 
         id: (Date.now() + 1).toString(), 
         role: 'assistant', 
-        content: "Ошибка соединения.",
+        content: errorMessage,
         timestamp: new Date()
       }]);
       setLoading(false);

@@ -59,11 +59,13 @@ export const generateAIResponse = async (
   audioBase64?: string,
   audioMimeType?: string
 ) => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing");
+  // Fix: Use process.env.API_KEY as per the coding guidelines to resolve TS error.
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY_NOT_CONFIGURED");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   const modelName = 'gemini-3-pro-preview';
 
   const contents: any[] = [];
