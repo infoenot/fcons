@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, FunctionDeclaration, Type, Tool } from "@google/genai";
 
 // Инструмент для добавления транзакции
@@ -59,13 +60,9 @@ export const generateAIResponse = async (
   audioBase64?: string,
   audioMimeType?: string
 ) => {
-  // FIX: Use process.env.API_KEY as per the coding guidelines.
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API_KEY_NOT_CONFIGURED");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Fix: Strictly follow guidelines by using process.env.API_KEY directly.
+  // The API key is assumed to be pre-configured and accessible in the environment.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = 'gemini-3-pro-preview';
 
   const contents: any[] = [];
@@ -99,6 +96,7 @@ export const generateAIResponse = async (
   const today = new Date().toISOString().split('T')[0];
 
   try {
+    // Fix: Call generateContent directly with the model and contents as per GenAI SDK guidelines.
     const response = await ai.models.generateContent({
       model: modelName,
       contents,
