@@ -1,6 +1,6 @@
 import { GoogleGenAI, FunctionDeclaration, Type, Tool } from "@google/genai";
 
-// We define the tools that Gemini can "call"
+// Инструмент для добавления транзакции
 const addTransactionTool: FunctionDeclaration = {
   name: "addTransaction",
   description: "Добавить новую финансовую транзакцию (расход или доход). Использовать, когда пользователь сообщает о покупке, получении денег или планирует платеж.",
@@ -19,27 +19,30 @@ const addTransactionTool: FunctionDeclaration = {
   }
 };
 
+// Инструмент для получения списка транзакций
 const getTransactionsTool: FunctionDeclaration = {
   name: "getTransactions",
-  description: "Получить список транзакций и общую сумму. Использовать, когда пользователь спрашивает 'сколько я потратил 2 декабря', 'какие расходы за месяц' или просит показать историю.",
+  description: "Получить список транзакций и общую сумму. Использовать, когда пользователь спрашивает о расходах, доходах или планах. Поддерживает фильтры по дате, категории и статусу (план/факт).",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      startDate: { type: Type.STRING, description: "Начальная дата (YYYY-MM-DD). Для одного дня startDate = endDate." },
+      startDate: { type: Type.STRING, description: "Начальная дата (YYYY-MM-DD)." },
       endDate: { type: Type.STRING, description: "Конечная дата (YYYY-MM-DD)." },
-      category: { type: Type.STRING, description: "Фильтр по категории (частичное совпадение)." },
-      type: { type: Type.STRING, enum: ["INCOME", "EXPENSE"], description: "Тип транзакции." }
+      category: { type: Type.STRING, description: "Фильтр по категории." },
+      type: { type: Type.STRING, enum: ["INCOME", "EXPENSE"], description: "Тип транзакции." },
+      status: { type: Type.STRING, enum: ["ACTUAL", "PLANNED"], description: "Статус: ACTUAL (факт) или PLANNED (план)." }
     }
   }
 };
 
+// Инструмент для проверки баланса
 const getBalanceTool: FunctionDeclaration = {
   name: "getBalance",
-  description: "Рассчитать баланс на определенную дату. Использовать, когда пользователь спрашивает 'какой у меня баланс', 'сколько денег будет 5 числа' и т.д.",
+  description: "Рассчитать баланс на определенную дату. Использовать для вопросов 'сколько у меня денег', 'какой будет баланс'.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      date: { type: Type.STRING, description: "Дата, на которую нужно рассчитать баланс (YYYY-MM-DD). Если 'сейчас' или 'сегодня', использовать текущую дату." }
+      date: { type: Type.STRING, description: "Дата расчета (YYYY-MM-DD). По умолчанию сегодня." }
     },
     required: ["date"]
   }
@@ -57,104 +60,63 @@ export const generateAIResponse = async (
   audioMimeType?: string
 ) => {
   if (!process.env.API_KEY) {
-    console.error("API Key is missing. Ensure process.env.API_KEY is set.");
     throw new Error("API Key is missing");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const model = "gemini-2.5-flash"; // Fast model for tools
+  const modelName = 'gemini-3-pro-preview';
 
   const contents: any[] = [];
 
-  // 1. Add History
-  // Gemini requires the conversation to start with a user message.
-  // We filter out any leading model messages.
+  // Добавление истории
   let firstUserFound = false;
-
   history.forEach(msg => {
-      // Skip system messages or empty content if any
-      if (!msg.content) return;
-      
-      const role = msg.role === 'assistant' ? 'model' : 'user';
-
-      if (role === 'user') {
-          firstUserFound = true;
-      }
-
-      if (!firstUserFound && role === 'model') {
-          return;
-      }
-
-      contents.push({
-          role: role,
-          parts: [{ text: msg.content }]
-      });
+    if (!msg.content) return;
+    const role = msg.role === 'assistant' ? 'model' : 'user';
+    if (role === 'user') firstUserFound = true;
+    if (!firstUserFound && role === 'model') return;
+    contents.push({ role, parts: [{ text: msg.content }] });
   });
 
-  // 2. Add Current Request
-  const parts: any[] = [];
-  
+  // Текущий запрос
+  const currentParts: any[] = [];
   if (imageBase64) {
-    parts.push({
-      inlineData: {
-        mimeType: "image/jpeg",
-        data: imageBase64
-      }
-    });
+    currentParts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
   }
-
   if (audioBase64) {
-     parts.push({
-      inlineData: {
-        mimeType: audioMimeType || "audio/webm", 
-        data: audioBase64
-      }
-    });
+    currentParts.push({ inlineData: { mimeType: audioMimeType || "audio/webm", data: audioBase64 } });
   }
 
-  // If we have audio but no prompt, provide a default instruction
-  let textPrompt = prompt;
-  if (!textPrompt && audioBase64) {
-      textPrompt = "Прослушай это аудио. Если это транзакция - добавь её. Если вопрос про баланс или расходы - ответь на него.";
-  } else if (!textPrompt && imageBase64) {
-      textPrompt = "Проанализируй изображение чека или товара и выдели детали транзакции.";
-  }
+  let finalPrompt = prompt;
+  if (!finalPrompt && audioBase64) finalPrompt = "Прослушай это сообщение и выполни действие.";
+  else if (!finalPrompt && imageBase64) finalPrompt = "Проанализируй чек на фото.";
+  
+  currentParts.push({ text: finalPrompt || "Привет" });
+  contents.push({ role: 'user', parts: currentParts });
 
-  parts.push({ text: textPrompt });
-
-  contents.push({
-      role: 'user',
-      parts: parts
-  });
-
-  const currentDate = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
 
   try {
-    const result = await ai.models.generateContent({
-      model,
-      contents: contents,
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents,
       config: {
-        tools: tools,
-        systemInstruction: `Ты — полезный и профессиональный финансовый ассистент. 
-        Твоя цель — помогать пользователю вести учет финансов.
+        tools,
+        systemInstruction: `Ты — продвинутый финансовый ассистент. Сегодня ${today}. 
+        Твои задачи:
+        1. Распознавать траты и доходы и сохранять их через addTransaction.
+        2. Искать транзакции (включая ПЛАНОВЫЕ) через getTransactions.
+        3. Считать баланс через getBalance.
         
-        СЕГОДНЯШНЯЯ ДАТА: ${currentDate}.
-        Используй эту дату для расчета относительных дат (сегодня, завтра, вчера).
-
-        Всегда отвечай на РУССКОМ языке.
+        Если пользователь спрашивает про планы, будущие платежи или 'что мне нужно оплатить', обязательно используй getTransactions с параметром status='PLANNED'.
         
-        1. Если пользователь сообщает о трате или доходе -> вызывай addTransaction.
-        2. Если пользователь спрашивает 'сколько я потратил', 'мои расходы за...' -> вызывай getTransactions.
-        3. Если пользователь спрашивает 'какой баланс', 'сколько денег останется...' -> вызывай getBalance.
-        
-        Если данных нет, скажи об этом вежливо.
-        Стиль: Профессиональный, лаконичный, "Нео-Финтех".`
+        Отвечай всегда на русском языке, кратко и по делу.`
       }
     });
 
-    return result;
+    return response;
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini API Error:", error);
     throw error;
   }
 };

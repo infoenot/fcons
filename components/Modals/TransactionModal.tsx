@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat } from '../../context/ChatContext';
-import { X, Plus, Check, Trash2, Repeat, Calendar, ChevronDown, Edit3 } from 'lucide-react';
+import { X, Plus, Check, Trash2, Repeat, Calendar, ChevronDown, Edit3, AlertTriangle } from 'lucide-react';
 import { Recurrence, Transaction, TransactionType, Category } from '../../types';
 import { format, parseISO, addDays, addMonths, addYears, getDay, isBefore, isSameDay } from 'date-fns';
 import BottomSheet from '../Shared/BottomSheet';
@@ -19,17 +19,18 @@ const TransactionModal: React.FC = () => {
 
   const [drafts, setDrafts] = useState<TransactionDraft[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setShowDeleteConfirm(false);
       if (initialDrafts && initialDrafts.length > 0) {
         setDrafts(initialDrafts.map((d, i) => ({
           ...d,
           tempId: `draft-${i}-${Date.now()}`,
           type: d.type || 'EXPENSE',
-          amount: d.amount !== undefined ? d.amount : undefined, // Allow empty amount initially
+          amount: d.amount !== undefined ? d.amount : undefined,
           date: d.date || format(new Date(), 'yyyy-MM-dd'),
           status: d.status || 'ACTUAL',
           recurrence: d.recurrence || Recurrence.NONE,
@@ -66,26 +67,6 @@ const TransactionModal: React.FC = () => {
     ));
   };
 
-  const generatePeriodicDates = (start: string, end: string, recurrence: Recurrence) => {
-    const dates: string[] = [];
-    let current = parseISO(start);
-    const endDate = parseISO(end);
-
-    if (isBefore(endDate, current)) return [start];
-
-    while (current <= endDate || isSameDay(current, endDate)) {
-      dates.push(format(current, 'yyyy-MM-dd'));
-
-      if (recurrence === Recurrence.WEEKLY) current = addDays(current, 7);
-      else if (recurrence === Recurrence.MONTHLY) current = addMonths(current, 1);
-      else if (recurrence === Recurrence.YEARLY) current = addYears(current, 1);
-      else current = addDays(current, 1);
-
-      if (dates.length > 366) break; 
-    }
-    return dates;
-  };
-
   const handleSaveAll = () => {
     const allValid = drafts.every(d => d.amount && d.amount > 0 && d.category && d.date);
     if (!allValid) return;
@@ -114,65 +95,54 @@ const TransactionModal: React.FC = () => {
         description: d.description || ''
       };
   
-      const finalRecurrence = baseData.recurrence;
-  
       if (mode === 'EDIT' && d.id) {
         const updatedTx = { ...baseData, id: d.id, date: d.date! } as Transaction;
         updateTransaction(updatedTx);
         createdOrUpdatedTransactions.push(updatedTx);
-      } else if (finalRecurrence === Recurrence.NONE) {
+      } else if (baseData.recurrence === Recurrence.NONE) {
         const newTx = addTransaction({ ...baseData, date: d.date! });
         createdOrUpdatedTransactions.push(newTx);
       } else {
-        const dates = generatePeriodicDates(d.date!, d.recurrenceEndDate!, finalRecurrence);
+        const dates = generatePeriodicDates(d.date!, d.recurrenceEndDate!, baseData.recurrence);
         const batch = dates.map(date => ({ ...baseData, date }));
         const newTxs = addTransactions(batch);
         createdOrUpdatedTransactions.push(...newTxs);
       }
     });
   
-    const totalCount = createdOrUpdatedTransactions.length;
-    let messageContent: string;
-    let transactionsToShow: Transaction[] | undefined = undefined;
-  
-    if (totalCount === 1) {
-      const tx = createdOrUpdatedTransactions[0];
-      const actionText = mode === 'EDIT' ? 'Обновил операцию' : 'Записал';
-      messageContent = `${actionText} в категории ${tx.category}.`;
-      transactionsToShow = [tx];
-    } else {
-      const totalAmount = createdOrUpdatedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-      messageContent = `Создано ${totalCount} операций на общую сумму ${totalAmount.toLocaleString('ru-RU')} ₽.`;
-    }
-  
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: messageContent,
-      timestamp: new Date(),
-      transactions: transactionsToShow
-    }]);
-  
     closeTransactionModal();
   };
 
-  const handleDelete = () => {
+  const generatePeriodicDates = (start: string, end: string, recurrence: Recurrence) => {
+    const dates: string[] = [];
+    let current = parseISO(start);
+    const endDate = parseISO(end);
+    if (isBefore(endDate, current)) return [start];
+    while (current <= endDate || isSameDay(current, endDate)) {
+      dates.push(format(current, 'yyyy-MM-dd'));
+      if (recurrence === Recurrence.WEEKLY) current = addDays(current, 7);
+      else if (recurrence === Recurrence.MONTHLY) current = addMonths(current, 1);
+      else if (recurrence === Recurrence.YEARLY) current = addYears(current, 1);
+      else current = addDays(current, 1);
+      if (dates.length > 366) break;
+    }
+    return dates;
+  };
+
+  const confirmDelete = () => {
       if (mode === 'EDIT' && activeDraft.id) {
-          if (confirm('Вы уверены, что хотите удалить эту операцию?')) {
-              deleteTransaction(activeDraft.id);
-              setMessages(prev => [...prev, { 
-                  id: Date.now().toString(), 
-                  role: 'assistant', 
-                  content: `Удалил операцию: ${activeDraft.category}, ${activeDraft.amount} ₽.`, 
-                  timestamp: new Date() 
-              }]);
-              closeTransactionModal();
-          }
+          deleteTransaction(activeDraft.id);
+          setMessages(prev => [...prev, { 
+              id: Date.now().toString(), 
+              role: 'assistant', 
+              content: `Удалил операцию: ${activeDraft.category}, ${activeDraft.amount} ₽.`, 
+              timestamp: new Date() 
+          }]);
+          closeTransactionModal();
       }
   };
 
   if (!isOpen || !activeDraft) return null;
-  
   const isValid = activeDraft.amount && activeDraft.amount > 0 && activeDraft.category;
   const isPeriodic = activeDraft.recurrence !== Recurrence.NONE;
 
@@ -186,7 +156,7 @@ const TransactionModal: React.FC = () => {
           <button onClick={handleSaveAll} disabled={!isValid} className={`p-2 transition-colors ${isValid ? 'text-fin-accent' : 'text-fin-textTert'}`}><Check size={24} /></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar p-5 pb-8">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-5 pb-8 relative">
         <div className="flex flex-col items-center justify-center pt-8 pb-10">
           <div className="relative">
             <input 
@@ -206,7 +176,6 @@ const TransactionModal: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-            {/* Main Info Card */}
             <div className="bg-fin-card rounded-card border border-fin-border divide-y divide-fin-border">
                <div onClick={() => setIsCategorySheetOpen(true)} className="p-4 flex justify-between items-center cursor-pointer">
                    <span className="text-sm font-medium text-fin-text">Категория</span>
@@ -225,7 +194,6 @@ const TransactionModal: React.FC = () => {
                </div>
             </div>
 
-            {/* Advanced Options Card */}
              <div className="bg-fin-card rounded-card border border-fin-border divide-y divide-fin-border">
                <div className="p-4 flex justify-between items-center">
                    <span className="text-sm font-medium text-fin-text">Повторение</span>
@@ -267,7 +235,7 @@ const TransactionModal: React.FC = () => {
             {mode === 'EDIT' && (
                 <div className="pt-4">
                   <button 
-                      onClick={handleDelete} 
+                      onClick={() => setShowDeleteConfirm(true)} 
                       className="w-full flex items-center justify-center gap-2 py-3 bg-fin-error/10 text-fin-error rounded-btn border border-fin-error/20 font-bold text-sm hover:bg-fin-error/20 transition-colors"
                   >
                       <Trash2 size={16} />
@@ -276,6 +244,21 @@ const TransactionModal: React.FC = () => {
                 </div>
             )}
         </div>
+
+        {/* Delete Confirmation Overlay */}
+        {showDeleteConfirm && (
+            <div className="absolute inset-0 bg-fin-bg/95 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200 z-50">
+                <div className="w-16 h-16 bg-fin-error/10 text-fin-error rounded-full flex items-center justify-center mb-4">
+                    <AlertTriangle size={32} />
+                </div>
+                <h4 className="text-xl font-bold text-fin-text mb-2">Удалить операцию?</h4>
+                <p className="text-fin-textSec text-sm mb-8">Это действие нельзя отменить.</p>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                    <button onClick={confirmDelete} className="w-full py-4 bg-fin-error text-white rounded-btn font-bold text-base active:scale-95 transition-all">Удалить</button>
+                    <button onClick={() => setShowDeleteConfirm(false)} className="w-full py-4 bg-fin-bgSec border border-fin-border text-fin-text rounded-btn font-bold text-base active:scale-95 transition-all">Отмена</button>
+                </div>
+            </div>
+        )}
       </div>
 
       <CategorySelectionSheet 
@@ -304,7 +287,6 @@ interface CategorySheetProps {
 const CategorySelectionSheet: React.FC<CategorySheetProps> = ({ isOpen, onClose, onSelect, activeType }) => {
     const { categories, addCategory } = useFinance();
     const [newCategoryName, setNewCategoryName] = useState('');
-
     const filteredCategories = useMemo(() => categories.filter(c => c.type === activeType), [categories, activeType]);
 
     const handleAddCategory = () => {
@@ -327,16 +309,8 @@ const CategorySelectionSheet: React.FC<CategorySheetProps> = ({ isOpen, onClose,
                     ))}
                 </div>
                 <div className="flex items-center gap-2 mt-6 pt-4 border-t border-fin-border">
-                    <input 
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Или создайте новую..."
-                        className="flex-1 bg-fin-bgSec border border-fin-border rounded-input px-4 py-3 text-sm text-fin-text outline-none focus:border-fin-accent transition-colors"
-                    />
-                    <button onClick={handleAddCategory} disabled={!newCategoryName.trim()} className="p-3 bg-fin-accent text-white rounded-btn disabled:opacity-50 transition-opacity">
-                       <Plus size={20}/>
-                    </button>
+                    <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Или создайте новую..." className="flex-1 bg-fin-bgSec border border-fin-border rounded-input px-4 py-3 text-sm text-fin-text outline-none focus:border-fin-accent transition-colors" />
+                    <button onClick={handleAddCategory} disabled={!newCategoryName.trim()} className="p-3 bg-fin-accent text-white rounded-btn disabled:opacity-50 transition-opacity"><Plus size={20}/></button>
                 </div>
             </div>
         </BottomSheet>

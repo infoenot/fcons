@@ -5,18 +5,18 @@ import { useChat } from '../../context/ChatContext';
 import { 
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, 
   addMonths, subMonths, parseISO, isToday, startOfWeek, endOfWeek, 
-  isBefore, isSameDay, getDate, getDay, differenceInCalendarDays
+  isBefore, isSameDay, getDate, getDay
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { Transaction, Category, TransactionType } from '../../types';
+import { Transaction, Category, TransactionType, Recurrence } from '../../types';
 import TransactionListModal from '../Modals/TransactionListModal';
 
 interface DisplayTransaction extends Transaction {
   displayDate: string;
 }
 
-const CalendarScreen: React.FC = () => {
+export default function CalendarScreen() {
   const { transactions, categories, addCategory, openTransactionModal, updateCategory } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeView, setActiveView] = useState<'categories' | 'transactions'>('categories');
@@ -65,7 +65,7 @@ const CalendarScreen: React.FC = () => {
     for (const t of sorted) {
       if (t.date < startStr) {
         running += (t.type === 'INCOME' ? t.amount : -t.amount);
-      } else {
+      } else { 
         break; 
       }
     }
@@ -217,7 +217,7 @@ const CalendarScreen: React.FC = () => {
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-4">
         
         {/* Calendar Card */}
-        <div className="bg-fin-card rounded-3xl border border-fin-border relative overflow-hidden shadow-sm mb-6 transition-colors">
+        <div className="bg-fin-card rounded-3xl border border-fin-border relative overflow-hidden shadow-sm mb-[46px] transition-colors">
             
             {/* Calendar Header */}
             <div className="flex items-center justify-between px-6 py-5 pt-6 shrink-0">
@@ -253,11 +253,11 @@ const CalendarScreen: React.FC = () => {
                         aspect-square rounded-btn flex items-center justify-center text-sm font-medium cursor-pointer transition-all relative overflow-hidden border
                         ${!isCurrentMonth ? 'opacity-30' : ''}
                         ${today 
-                            ? 'bg-fin-accent/10 text-fin-accent border-fin-accent/50 dark:bg-[#6b9b85] dark:border-[#7fac98] dark:text-white' 
+                            ? 'bg-fin-accent/10 text-fin-accent border-fin-accent/50 dark:bg-fin-accent dark:border-fin-accentSec dark:text-white' 
                             : isCashGap
-                            ? 'bg-fin-error/10 text-fin-error border-fin-error/20 hover:brightness-110 dark:bg-[#191919] dark:border-[#313131] dark:text-fin-text'
+                            ? 'bg-[#191919] text-fin-error border-fin-border hover:brightness-110'
                             : hasTx 
-                                ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105 dark:bg-[#333131] dark:border-[#3c3c3c]' 
+                                ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105' 
                                 : 'bg-transparent text-fin-textSec hover:bg-fin-bgSec border-transparent hover:border-fin-border transition-all'}
                         `}
                     >
@@ -271,23 +271,34 @@ const CalendarScreen: React.FC = () => {
             </div>
         </div>
 
-        {/* Tabbed View */}
+        {/* Tabbed View Controls */}
         <div className="px-1 mb-6">
-            <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between mb-[38px] px-2">
+                {/* Segmented Control */}
+                <div className="flex bg-fin-bgSec p-1 rounded-full w-auto border border-fin-border">
                     <button 
                         onClick={() => setActiveView('categories')} 
-                        className={`text-lg font-semibold transition-all duration-300 ${activeView === 'categories' ? 'text-fin-text' : 'text-fin-textTert'}`}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                            activeView === 'categories' 
+                                ? 'bg-[#323233] text-white shadow-sm' 
+                                : 'text-fin-textSec hover:text-fin-text'
+                        }`}
                     >
                         Категории
                     </button>
                     <button 
                         onClick={() => setActiveView('transactions')} 
-                        className={`text-lg font-semibold transition-all duration-300 ${activeView === 'transactions' ? 'text-fin-text' : 'text-fin-textTert'}`}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                            activeView === 'transactions' 
+                                ? 'bg-[#323233] text-white shadow-sm' 
+                                : 'text-fin-textSec hover:text-fin-text'
+                        }`}
                     >
                         Транзакции
                     </button>
                 </div>
+
+                {/* Planned Toggle */}
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-fin-textSec select-none w-8 text-right">{includePlanned ? 'Все' : 'Факт'}</span>
                     <button
@@ -308,6 +319,7 @@ const CalendarScreen: React.FC = () => {
                 </div>
             </div>
 
+            {/* View Content */}
             {activeView === 'categories' ? (
                  <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
                     {incomeCategories.map(cat => {
@@ -320,7 +332,7 @@ const CalendarScreen: React.FC = () => {
                             >
                                 <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
-                                    {total.toLocaleString('ru-RU')} ₽
+                                    {total > 0 ? '+' : ''}{total.toLocaleString('ru-RU')} ₽
                                 </span>
                             </div>
                         );
@@ -342,7 +354,7 @@ const CalendarScreen: React.FC = () => {
                     })}
                      <button 
                         onClick={() => setIsAddCategoryOpen(true)}
-                        className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-[#252525] dark:border-[#353535] dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
+                        className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-fin-bgSec dark:border-fin-border dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
                         >
                             <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
                                 <Plus size={24} />
@@ -356,14 +368,25 @@ const CalendarScreen: React.FC = () => {
                             <div 
                                 key={`${t.id}-${t.displayDate}-${index}`} 
                                 onClick={() => openTransactionModal('EDIT', t)} 
-                                className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 cursor-pointer hover:bg-fin-card transition-all"
+                                className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:bg-fin-card transition-all"
                             >
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-fin-text text-sm truncate">{t.category}</div>
-                                    <div className="text-xs text-fin-textTert">{capitalize(format(parseISO(t.displayDate), 'd MMMM, eeee', { locale: ru }))}</div>
+                                {/* Top Row */}
+                                <div className="flex justify-between items-start">
+                                    <span className="font-semibold text-fin-text text-base truncate">{t.category}</span>
+                                    <span className={`font-medium text-base whitespace-nowrap ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                        {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
+                                    </span>
                                 </div>
-                                <div className={`font-medium text-sm ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-                                    {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
+                                {/* Bottom Row */}
+                                <div className="flex justify-between items-end">
+                                    <span className="text-xs text-fin-textTert">
+                                        {capitalize(format(parseISO(t.displayDate), 'd MMM, eee', { locale: ru }))}.
+                                    </span>
+                                    <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+                                        <span className="text-xs font-semibold text-fin-textSec">
+                                            {t.status === 'PLANNED' ? 'П' : 'Ф'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -396,7 +419,7 @@ const CalendarScreen: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 interface AddCategoryModalProps {
     onClose: () => void;
@@ -462,5 +485,3 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onAdd }) =
         document.body
     );
 };
-
-export default CalendarScreen;

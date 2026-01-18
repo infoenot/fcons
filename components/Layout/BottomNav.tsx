@@ -15,7 +15,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange }) => {
   ];
 
   return (
-    <div className="bg-fin-bg/40 backdrop-blur-3xl pt-2 pb-safe px-6 h-[72px] flex justify-between items-center z-40 w-full shrink-0 transition-colors duration-300">
+    <div className="bg-fin-bg pt-2 pb-safe px-6 h-[72px] flex justify-between items-center z-40 w-full shrink-0 transition-colors duration-300">
       {orderedTabs.map((tab) => {
         const isActive = currentTab === tab.id;
         return (
@@ -26,7 +26,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange }) => {
           >
             <div className="p-2">
                <tab.icon 
-                 size={28} 
+                 size={22} 
                  className={`transition-colors duration-200 ${isActive ? 'text-fin-text' : 'text-fin-textTert'}`}
                  strokeWidth={2}
                />

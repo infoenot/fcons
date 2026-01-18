@@ -276,21 +276,23 @@ export default function ChatScreen() {
                      includeInBalance: true 
                  });
              } else if (call.name === 'getTransactions') {
-                 const { startDate, endDate, category, type } = call.args;
+                 const { startDate, endDate, category, type, status } = call.args;
                  let filtered = transactions;
                  
                  if (type) filtered = filtered.filter(t => t.type === type);
                  if (category) filtered = filtered.filter(t => t.category.toLowerCase().includes(category.toLowerCase()));
                  if (startDate) filtered = filtered.filter(t => t.date >= startDate);
                  if (endDate) filtered = filtered.filter(t => t.date <= endDate);
+                 if (status) filtered = filtered.filter(t => t.status === status);
 
                  if (filtered.length === 0) {
                     setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: "Транзакции не найдены.", timestamp: new Date() }]);
                  } else {
                     const totalSum = filtered.reduce((sum, t) => sum + (t.type === 'INCOME' ? t.amount : -t.amount), 0);
+                    const statusText = status === 'PLANNED' ? 'запланированных ' : status === 'ACTUAL' ? 'фактических ' : '';
                     const question = filtered.length > 30 
-                      ? `Найдено ${filtered.length} транзакций. Точно показать?`
-                      : `Найдено ${filtered.length} транзакций на общую сумму ${totalSum.toLocaleString()} ₽. Показать их?`;
+                      ? `Найдено ${filtered.length} ${statusText}транзакций. Точно показать?`
+                      : `Найдено ${filtered.length} ${statusText}транзакций на общую сумму ${totalSum.toLocaleString()} ₽. Показать их?`;
                     
                     setMessages(prev => [...prev, {
                         id: (Date.now() + 1).toString(),
@@ -434,7 +436,7 @@ export default function ChatScreen() {
                   text-[14px] font-normal tracking-[0] leading-[1.35] transition-all
                   ${msg.role === 'user' 
                     ? 'bg-fin-accent text-white rounded-2xl rounded-br-none shadow-md p-3.5 max-w-[85%]' 
-                    : 'text-left text-fin-text max-w-[68%]'} 
+                    : `text-left text-fin-text ${msg.transactions && msg.transactions.length > 0 ? 'w-full' : 'max-w-[78%]'}`} 
                 `}>
                    {msg.isAudio ? (
                        <div className="flex items-center gap-3 py-1 px-2 w-full min-w-[170px]">
@@ -573,14 +575,25 @@ const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, 
   return (
     <div 
       onClick={onEdit}
-      className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 max-w-[280px] cursor-pointer hover:bg-fin-card transition-all"
+      className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:bg-fin-card transition-all w-full"
     >
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-fin-text text-sm truncate">{transaction.category}</div>
-        <div className="text-xs text-fin-textTert">{capitalize(format(parseISO(transaction.date), 'd MMMM', { locale: ru }))}</div>
+      {/* Top Row */}
+      <div className="flex justify-between items-start">
+        <span className="font-semibold text-fin-text text-base truncate">{transaction.category}</span>
+        <span className={`font-medium text-base whitespace-nowrap ${transaction.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+          {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString('ru-RU')} ₽
+        </span>
       </div>
-      <div className={`font-medium text-sm ${transaction.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-        {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString('ru-RU')} ₽
+      {/* Bottom Row */}
+      <div className="flex justify-between items-end">
+        <span className="text-xs text-fin-textTert">
+          {capitalize(format(parseISO(transaction.date), 'd MMM, eee', { locale: ru }))}.
+        </span>
+        <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+          <span className="text-xs font-semibold text-fin-textSec">
+            {transaction.status === 'PLANNED' ? 'П' : 'Ф'}
+          </span>
+        </div>
       </div>
     </div>
   );

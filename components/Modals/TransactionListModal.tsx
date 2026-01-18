@@ -35,6 +35,8 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
   const [tempTitle, setTempTitle] = useState(title);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
   useEffect(() => {
     setTempTitle(title);
   }, [title]);
@@ -151,22 +153,31 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
             transactions.map(t => {
                 if (mode === 'NOTIFICATIONS') {
                     return (
-                        <div key={t.id} className="flex flex-col gap-2 p-3 bg-fin-bgSec rounded-xl border border-fin-border">
-                            <div onClick={() => handleEdit(t)} className="flex justify-between items-center cursor-pointer">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-fin-text text-sm">{t.category}</p>
-                                    <p className="text-xs text-fin-textTert font-medium mt-0.5">
-                                        {format(parseISO(t.date), 'd MMMM, eeee', { locale: ru })}
-                                    </p>
+                        <div key={t.id} className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3">
+                            <div onClick={() => handleEdit(t)} className="flex flex-col gap-3 cursor-pointer">
+                                {/* Top Row */}
+                                <div className="flex justify-between items-start">
+                                    <span className="font-semibold text-fin-text text-base truncate">{t.category}</span>
+                                    <span className={`font-medium text-base whitespace-nowrap ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                        {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
+                                    </span>
                                 </div>
-                                <span className={`text-sm font-medium ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-                                    {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} ₽
-                                </span>
+                                {/* Bottom Row */}
+                                <div className="flex justify-between items-end">
+                                    <span className="text-xs text-fin-textTert">
+                                        {capitalize(format(parseISO(t.date), 'd MMM, eee', { locale: ru }))}.
+                                    </span>
+                                    <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+                                        <span className="text-xs font-semibold text-fin-textSec">
+                                            {t.status === 'PLANNED' ? 'П' : 'Ф'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex justify-end pt-2 border-t border-fin-border/30 mt-1">
                                 <button 
                                     onClick={() => handleConfirm(t)}
-                                    className="flex-1 py-1.5 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95"
+                                    className="flex-1 py-2 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95"
                                 >
                                     <Check size={14} strokeWidth={2.5} /> <span className="text-xs font-bold">Подтвердить</span>
                                 </button>
@@ -179,21 +190,29 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
                     <div 
                         key={t.id}
                         onClick={() => handleEdit(t)}
-                        className="bg-fin-bgSec border border-fin-border rounded-xl p-3 flex items-center gap-4 cursor-pointer hover:bg-fin-card transition-all"
+                        className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:bg-fin-card transition-all"
                     >
-                        <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-fin-text text-sm truncate flex items-center gap-2">
-                                {t.category}
-                                {t.recurrence !== 'NONE' && (<Repeat size={12} className="text-fin-textTert" />)}
-                            </p>
-                            {t.description && <p className="text-xs text-fin-textTert truncate">{t.description}</p>}
-                            {t.status === 'PLANNED' && (
-                                <span className="text-[10px] bg-fin-border px-2 py-0.5 rounded text-fin-textSec font-bold uppercase tracking-wider mt-1 inline-block">План</span>
-                            )}
+                        {/* Top Row */}
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2 truncate">
+                                <span className="font-semibold text-fin-text text-base truncate">{t.category}</span>
+                                {t.recurrence !== 'NONE' && (<Repeat size={14} className="text-fin-textTert shrink-0" />)}
+                            </div>
+                            <span className={`font-medium text-base whitespace-nowrap ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
+                            </span>
                         </div>
-                        <span className={`font-medium text-sm ml-auto ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-                            {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()} ₽
-                        </span>
+                        {/* Bottom Row */}
+                        <div className="flex justify-between items-end">
+                            <span className="text-xs text-fin-textTert">
+                                {capitalize(format(parseISO(t.date), 'd MMM, eee', { locale: ru }))}.
+                            </span>
+                            <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+                                <span className="text-xs font-semibold text-fin-textSec">
+                                    {t.status === 'PLANNED' ? 'П' : 'Ф'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 )
             })
