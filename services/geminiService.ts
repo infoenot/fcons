@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, FunctionDeclaration, Type, Tool } from "@google/genai";
 
 // Инструмент для добавления транзакции
@@ -60,9 +59,15 @@ export const generateAIResponse = async (
   audioBase64?: string,
   audioMimeType?: string
 ) => {
-  // Fix: Strictly follow guidelines by using process.env.API_KEY directly.
-  // The API key is assumed to be pre-configured and accessible in the environment.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Ключ API будет подставлен сборщиком Vite из переменной VITE_API_KEY.
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    // Эта ошибка будет поймана в ChatScreen и отобразит понятное сообщение.
+    throw new Error("API_KEY_NOT_CONFIGURED");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   const modelName = 'gemini-3-pro-preview';
 
   const contents: any[] = [];
@@ -96,7 +101,6 @@ export const generateAIResponse = async (
   const today = new Date().toISOString().split('T')[0];
 
   try {
-    // Fix: Call generateContent directly with the model and contents as per GenAI SDK guidelines.
     const response = await ai.models.generateContent({
       model: modelName,
       contents,
@@ -117,6 +121,7 @@ export const generateAIResponse = async (
     return response;
   } catch (error) {
     console.error("Gemini API Error:", error);
+    // Перебрасываем ошибку, чтобы ее можно было обработать в UI
     throw error;
   }
 };
