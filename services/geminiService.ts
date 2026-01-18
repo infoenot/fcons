@@ -59,7 +59,7 @@ export const generateAIResponse = async (
   audioBase64?: string,
   audioMimeType?: string
 ) => {
-  // Fix: Use process.env.API_KEY as per the coding guidelines to resolve TS error.
+  // FIX: Use process.env.API_KEY as per the coding guidelines.
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
     throw new Error("API_KEY_NOT_CONFIGURED");
