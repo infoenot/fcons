@@ -136,7 +136,7 @@ export default function ChatScreen() {
                 console.error(e);
                 let errorMessage = "Ошибка обработки аудио.";
                 if (e instanceof Error && e.message === "API_KEY_NOT_CONFIGURED") {
-                    errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения VITE_API_KEY задана в настройках вашего хостинга (например, Netlify).";
+                    errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
                 }
                 setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: errorMessage, timestamp: new Date() }]);
                 setLoading(false);
@@ -210,7 +210,7 @@ export default function ChatScreen() {
     } catch (error) {
       let errorMessage = "Ошибка соединения.";
       if (error instanceof Error && error.message === "API_KEY_NOT_CONFIGURED") {
-        errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения VITE_API_KEY задана в настройках вашего хостинга (например, Netlify).";
+        errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
       }
       setMessages(prev => [...prev, { 
         id: (Date.now() + 1).toString(), 

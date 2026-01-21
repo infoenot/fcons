@@ -1,7 +1,7 @@
 // Fix: Removed reference to "vite/client" as it was causing a type resolution error.
 
 interface ImportMetaEnv {
-  readonly VITE_API_KEY: string;
+  readonly API_KEY: string;
 }
 
 interface ImportMeta {
