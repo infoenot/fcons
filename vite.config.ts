@@ -1,19 +1,18 @@
+
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Загружаем переменные окружения из текущей директории.
-  // Третий параметр '' позволяет загружать все переменные.
-  // FIX: Replaced `process.cwd()` with an empty string and removed the unnecessary Node.js types reference to fix build configuration errors.
-  const env = loadEnv(mode, '', '');
+  // Загружаем локальные переменные из .env файлов
+  // Fix: Use '.' instead of process.cwd() to avoid TypeScript errors regarding the Process type.
+  const env = loadEnv(mode, '.', '');
   
   return {
     plugins: [react()],
     define: {
-      // Это критически важная часть для работы на Netlify:
-      // Мы заменяем строку 'process.env.API_KEY' в коде на реальное значение ключа API_KEY при сборке.
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // Поддерживаем как локальный запуск (env), так и переменные Netlify (process.env)
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY)
     }
   }
 })

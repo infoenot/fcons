@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check, Plus, Camera, Image } from 'lucide-react';
 import { generateAIResponse } from '../../services/geminiService';
@@ -132,11 +133,13 @@ export default function ChatScreen() {
             try {
                 const result = await generateAIResponse("", history, undefined, base64Audio, mimeType);
                 await processAIResult(result);
-            } catch (e) {
+            } catch (e: any) {
                 console.error(e);
                 let errorMessage = "Ошибка обработки аудио.";
-                if (e instanceof Error && e.message === "API_KEY_NOT_CONFIGURED") {
-                    errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
+                if (e.message === "API_KEY_NOT_CONFIGURED") {
+                    errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга.";
+                } else if (e.message === "QUOTA_EXCEEDED") {
+                    errorMessage = "Лимит бесплатных запросов к AI на сегодня исчерпан. Пожалуйста, попробуйте позже или завтра.";
                 }
                 setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: errorMessage, timestamp: new Date() }]);
                 setLoading(false);
@@ -207,10 +210,12 @@ export default function ChatScreen() {
     try {
       const result = await generateAIResponse(userMsg.content, history);
       await processAIResult(result);
-    } catch (error) {
+    } catch (error: any) {
       let errorMessage = "Ошибка соединения.";
-      if (error instanceof Error && error.message === "API_KEY_NOT_CONFIGURED") {
-        errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга (например, Netlify).";
+      if (error.message === "API_KEY_NOT_CONFIGURED") {
+        errorMessage = "Ключ API не настроен. Убедитесь, что переменная окружения API_KEY задана в настройках вашего хостинга.";
+      } else if (error.message === "QUOTA_EXCEEDED") {
+        errorMessage = "Лимит бесплатных запросов к AI на сегодня исчерпан. Пожалуйста, попробуйте позже или завтра.";
       }
       setMessages(prev => [...prev, { 
         id: (Date.now() + 1).toString(), 
@@ -391,8 +396,13 @@ export default function ChatScreen() {
           try {
              const result = await generateAIResponse("", history, base64);
              await processAIResult(result);
-          } catch (err) {
+          } catch (err: any) {
               console.error(err);
+              let errorMessage = "Ошибка обработки изображения.";
+              if (err.message === "QUOTA_EXCEEDED") {
+                  errorMessage = "Лимит бесплатных запросов к AI на сегодня исчерпан. Пожалуйста, попробуйте позже.";
+              }
+              setMessages(prev => [...prev, { id: (Date.now()+1).toString(), role: 'assistant', content: errorMessage, timestamp: new Date() }]);
               setLoading(false);
           }
       };

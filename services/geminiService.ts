@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, FunctionDeclaration, Type, Tool } from "@google/genai";
 
 // Инструмент для добавления транзакции
@@ -59,22 +60,22 @@ export const generateAIResponse = async (
   audioBase64?: string,
   audioMimeType?: string
 ) => {
-  // Ключ API будет подставлен сборщиком Vite из переменной VITE_API_KEY.
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
-    // Эта ошибка будет поймана в ChatScreen и отобразит понятное сообщение.
+  // Fix: Directly check and use process.env.API_KEY as per guidelines.
+  if (!process.env.API_KEY) {
     throw new Error("API_KEY_NOT_CONFIGURED");
   }
   
-  const ai = new GoogleGenAI({ apiKey });
-  const modelName = 'gemini-3-pro-preview';
+  // Create a new instance right before making an API call to ensure it uses the correct key.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Fix: Use gemini-3-flash-preview for the financial assistant task as per guidelines.
+  const modelName = 'gemini-3-flash-preview';
 
   const contents: any[] = [];
 
-  // Добавление истории
+  // Добавление истории (ограничиваем, чтобы не раздувать контекст и беречь токены)
   let firstUserFound = false;
-  history.forEach(msg => {
+  history.slice(-10).forEach(msg => {
     if (!msg.content) return;
     const role = msg.role === 'assistant' ? 'model' : 'user';
     if (role === 'user') firstUserFound = true;
@@ -112,16 +113,19 @@ export const generateAIResponse = async (
         2. Искать транзакции (включая ПЛАНОВЫЕ) через getTransactions.
         3. Считать баланс через getBalance.
         
-        Если пользователь спрашивает про планы, будущие платежи или 'что мне нужно оплатить', обязательно используй getTransactions с параметром status='PLANNED'.
-        
         Отвечай всегда на русском языке, кратко и по делу.`
       }
     });
 
     return response;
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Перебрасываем ошибку, чтобы ее можно было обработать в UI
+  } catch (error: any) {
+    console.error("Gemini API Error details:", error);
+    
+    // Если ошибка 429, выбрасываем специфичное исключение для UI
+    if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED' || error.message?.includes('quota')) {
+      throw new Error("QUOTA_EXCEEDED");
+    }
+    
     throw error;
   }
 };
