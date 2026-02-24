@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Loader2, Send, Square, Play, Pause, Edit2, Trash2, Repeat, Check, Plus, Camera, Image } from 'lucide-react';
-import { generateAIResponse } from '../../services/geminiService';
+import { generateAIResponse } from '../../services/polzaService';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat, Message } from '../../context/ChatContext';
 import { format, differenceInCalendarDays, parseISO } from 'date-fns';
