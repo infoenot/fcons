@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  name       String
+  avatar     String?
+  plan       String   @default("free")
+  createdAt  DateTime @default(now())
+
+  spaces     SpaceMember[]
+  transactions Transaction[]
+}
+
+model Space {
+  id          Int      @id @default(autoincrement())
+  name        String
+  inviteToken String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  members      SpaceMember[]
+  transactions Transaction[]
+  categories   Category[]
+}
+
+model SpaceMember {
+  id      Int    @id @default(autoincrement())
+  role    String @default("member")
+  user    User   @relation(fields: [userId], references: [id])
+  userId  Int
+  space   Space  @relation(fields: [spaceId], references: [id])
+  spaceId Int
+
+  @@unique([userId, spaceId])
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  type        String
+  amount      Float
+  date        String
+  category    String
+  status      String   @default("ACTUAL")
+  description String?
+  recurrence  String   @default("NONE")
+  createdAt   DateTime @default(now())
+
+  addedBy   User  @relation(fields: [addedById], references: [id])
+  addedById Int
+  space     Space @relation(fields: [spaceId], references: [id])
+  spaceId   Int
+}
+
+model Category {
+  id      Int    @id @default(autoincrement())
+  name    String
+  icon    String?
+  space   Space  @relation(fields: [spaceId], references: [id])
+  spaceId Int
+}
