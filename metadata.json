@@ -1,8 +1,0 @@
-{
-  "name": "Fin-Assistant",
-  "description": "Умный финансовый трекер, объединяющий классический учет с разговорным AI-ассистентом.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}

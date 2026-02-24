@@ -114,7 +114,7 @@ const getSystemPrompt = () => {
 // ── Вспомогательная функция запроса к Polza.ai ───────────────
 
 const polzaFetch = async (endpoint: string, body: object): Promise<any> => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = import.meta.env.VITE_API_KEY;
   if (!apiKey) throw new Error("API_KEY_NOT_CONFIGURED");
 
   const response = await fetch(`${POLZA_BASE_URL}${endpoint}`, {
@@ -141,7 +141,7 @@ const transcribeAudio = async (
   audioBase64: string,
   mimeType: string
 ): Promise<string> => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = import.meta.env.VITE_API_KEY;
   if (!apiKey) throw new Error("API_KEY_NOT_CONFIGURED");
 
   const byteString = atob(audioBase64);
