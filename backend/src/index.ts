@@ -6,6 +6,7 @@ import { execSync } from "child_process";
 import authRouter from "./routes/auth";
 import transactionsRouter from "./routes/transactions";
 import categoriesRouter from "./routes/categories";
+import spacesRouter from "./routes/spaces";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.get("/health", (req, res) => {
 app.use("/api", authRouter);
 app.use("/api", transactionsRouter);
 app.use("/api", categoriesRouter);
+app.use("/api", spacesRouter);
 
 async function main() {
   try {
