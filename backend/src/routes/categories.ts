@@ -6,20 +6,23 @@ const router = Router();
 const prisma = new PrismaClient();
 
 router.get("/categories", validateTelegramAuth, async (req, res) => {
-  const tgUser = (req as any).telegramUser;
-  const user = await prisma.user.findUnique({ where: { telegramId: String(tgUser.id) } });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  const categories = await prisma.category.findMany({ where: { userId: user.id } });
-  res.json({ categories });
+  try {
+    const spaceId = Number(req.query.spaceId);
+    const categories = await prisma.category.findMany({ where: { spaceId } });
+    res.json({ categories });
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 router.post("/categories", validateTelegramAuth, async (req, res) => {
-  const tgUser = (req as any).telegramUser;
-  const user = await prisma.user.findUnique({ where: { telegramId: String(tgUser.id) } });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  const { name, icon, color, type } = req.body;
-  const category = await prisma.category.create({ data: { name, icon, color, type, userId: user.id } });
-  res.json({ category });
+  try {
+    const { name, icon, spaceId } = req.body;
+    const category = await prisma.category.create({ data: { name, icon, spaceId: Number(spaceId) } });
+    res.json({ category });
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 export default router;
