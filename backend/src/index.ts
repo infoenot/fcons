@@ -1,17 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { execSync } from 'child_process';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
-// Run migrations on startup
-try {
-  execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: '/app/backend' });
-  console.log('Migrations applied');
-} catch (e) {
-  console.error('Migration error:', e);
-}
+const prisma = new PrismaClient();
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -23,6 +17,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-});
+async function main() {
+  await prisma.$connect();
+  console.log('Database connected');
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+main().catch(console.error);
