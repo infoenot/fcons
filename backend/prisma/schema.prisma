@@ -15,7 +15,7 @@ model User {
   plan       String   @default("free")
   createdAt  DateTime @default(now())
 
-  spaces     SpaceMember[]
+  spaces       SpaceMember[]
   transactions Transaction[]
 }
 
@@ -42,15 +42,17 @@ model SpaceMember {
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  type        String
-  amount      Float
-  date        String
-  category    String
-  status      String   @default("ACTUAL")
-  description String?
-  recurrence  String   @default("NONE")
-  createdAt   DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  type             String   // INCOME | EXPENSE
+  amount           Float
+  date             String   // YYYY-MM-DD
+  category         String
+  status           String   @default("ACTUAL")   // ACTUAL | PLANNED
+  recurrence       String   @default("NONE")      // NONE | DAILY | WEEKLY | MONTHLY | YEARLY
+  recurrenceEndDate String?
+  includeInBalance Boolean  @default(true)
+  description      String?
+  createdAt        DateTime @default(now())
 
   addedBy   User  @relation(fields: [addedById], references: [id])
   addedById Int
@@ -61,6 +63,8 @@ model Transaction {
 model Category {
   id      Int    @id @default(autoincrement())
   name    String
+  type    String @default("EXPENSE")  // INCOME | EXPENSE
+  color   String @default("#3B82F6")
   icon    String?
   space   Space  @relation(fields: [spaceId], references: [id])
   spaceId Int

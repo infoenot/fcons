@@ -13,16 +13,37 @@ async function request(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status}: ${text}`);
+  }
   return res.json();
 }
 
 export const api = {
+  // Auth
   auth: () => request("/api/auth/telegram", { method: "POST" }),
+
+  // Spaces
   getMySpace: () => request("/api/spaces/my"),
-  getTransactions: (spaceId: number) => request(`/api/transactions?spaceId=${spaceId}`),
-  addTransaction: (data: any) => request("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
-  deleteTransaction: (id: string) => request(`/api/transactions/${id}`, { method: "DELETE" }),
-  getCategories: (spaceId: number) => request(`/api/categories?spaceId=${spaceId}`),
-  addCategory: (data: any) => request("/api/categories", { method: "POST", body: JSON.stringify(data) }),
+
+  // Transactions
+  getTransactions: (spaceId: number) =>
+    request(`/api/transactions?spaceId=${spaceId}`),
+  addTransaction: (data: any) =>
+    request("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
+  updateTransaction: (id: string, data: any) =>
+    request(`/api/transactions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteTransaction: (id: string) =>
+    request(`/api/transactions/${id}`, { method: "DELETE" }),
+
+  // Categories
+  getCategories: (spaceId: number) =>
+    request(`/api/categories?spaceId=${spaceId}`),
+  addCategory: (data: any) =>
+    request("/api/categories", { method: "POST", body: JSON.stringify(data) }),
+  updateCategory: (id: string, data: any) =>
+    request(`/api/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteCategory: (id: string) =>
+    request(`/api/categories/${id}`, { method: "DELETE" }),
 };

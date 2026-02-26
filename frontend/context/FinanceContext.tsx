@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Transaction, TransactionType, Category, SummaryData, CashGap } from "../types";
+import { Transaction, TransactionType, Category, SummaryData, CashGap, Recurrence } from "../types";
 import { api } from "../services/api";
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays } from "date-fns";
 
@@ -14,13 +14,13 @@ interface FinanceContextType {
   categories: Category[];
   spaceId: number | null;
   loading: boolean;
-  addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
+  addTransaction: (t: Omit<Transaction, "id">) => Promise<Transaction | null>;
   addTransactions: (ts: Omit<Transaction, "id">[]) => Promise<void>;
-  updateTransaction: (t: Transaction) => void;
+  updateTransaction: (t: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   deleteTransactions: (ids: string[]) => Promise<void>;
   addCategory: (name: string, type: TransactionType) => Promise<void>;
-  updateCategory: (id: string, newName: string) => void;
+  updateCategory: (id: string, newName: string) => Promise<void>;
   getSummary: (monthDate: Date) => SummaryData;
   pendingConfirmations: Transaction[];
   modalState: ModalState;
@@ -38,18 +38,19 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
   const [modalState, setModalState] = useState<ModalState>({ isOpen: false, mode: "ADD", drafts: [] });
 
+  // Инициализация: auth → space → данные
   useEffect(() => {
     async function init() {
-      console.log("API URL:", "https://infoenot-fcons-6ca6.twc1.net");
-      console.log("initData:", window.Telegram?.WebApp?.initData);
       try {
         await api.auth();
         const { space } = await api.getMySpace();
         setSpaceId(space.id);
+
         const [txRes, catRes] = await Promise.all([
           api.getTransactions(space.id),
-          api.getCategories(space.id)
+          api.getCategories(space.id),
         ]);
+
         setTransactions(txRes.transactions || []);
         setCategories(catRes.categories || []);
       } catch (e) {
@@ -61,9 +62,10 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     init();
   }, []);
 
+  // Определяем просроченные плановые транзакции
   useEffect(() => {
     const today = new Date();
-    const pending = transactions.filter(t => {
+    const pending = transactions.filter((t) => {
       if (t.status !== "PLANNED") return false;
       const txDate = parseISO(t.date);
       return differenceInCalendarDays(today, txDate) >= 0;
@@ -71,68 +73,140 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     setPendingConfirmations(pending);
   }, [transactions]);
 
-  const addTransaction = async (t: Omit<Transaction, "id">) => {
-    if (!spaceId) return;
-    const { transaction } = await api.addTransaction({ ...t, spaceId });
-    setTransactions(prev => [...prev, { ...transaction, id: String(transaction.id) }]);
+  // ── ТРАНЗАКЦИИ ─────────────────────────────────────────────
+
+  const addTransaction = async (t: Omit<Transaction, "id">): Promise<Transaction | null> => {
+    if (!spaceId) return null;
+    try {
+      const { transaction } = await api.addTransaction({ ...t, spaceId });
+      const normalized: Transaction = {
+        ...transaction,
+        id: String(transaction.id),
+        status: transaction.status || "ACTUAL",
+        recurrence: transaction.recurrence || Recurrence.NONE,
+        includeInBalance: transaction.includeInBalance ?? true,
+      };
+      setTransactions((prev) => [...prev, normalized]);
+      return normalized;
+    } catch (e) {
+      console.error("addTransaction error:", e);
+      return null;
+    }
   };
 
-  const addTransactions = async (ts: Omit<Transaction, "id">[]) => {
+  const addTransactions = async (ts: Omit<Transaction, "id">[]): Promise<void> => {
     for (const t of ts) await addTransaction(t);
   };
 
-  const updateTransaction = (t: Transaction) => {
-    setTransactions(prev => prev.map(tx => tx.id === t.id ? t : tx));
+  const updateTransaction = async (t: Transaction): Promise<void> => {
+    try {
+      await api.updateTransaction(t.id, t);
+      setTransactions((prev) => prev.map((tx) => (tx.id === t.id ? t : tx)));
+    } catch (e) {
+      console.error("updateTransaction error:", e);
+    }
   };
 
-  const deleteTransaction = async (id: string) => {
-    await api.deleteTransaction(id);
-    setTransactions(prev => prev.filter(tx => tx.id !== id));
+  const deleteTransaction = async (id: string): Promise<void> => {
+    try {
+      await api.deleteTransaction(id);
+      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+    } catch (e) {
+      console.error("deleteTransaction error:", e);
+    }
   };
 
-  const deleteTransactions = async (ids: string[]) => {
+  const deleteTransactions = async (ids: string[]): Promise<void> => {
     for (const id of ids) await deleteTransaction(id);
   };
 
-  const addCategory = async (name: string, type: TransactionType) => {
+  // ── КАТЕГОРИИ ──────────────────────────────────────────────
+
+  const addCategory = async (name: string, type: TransactionType): Promise<void> => {
     if (!spaceId) return;
-    const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const { category } = await api.addCategory({ name, type, color, spaceId });
-    setCategories(prev => [...prev, { ...category, id: String(category.id) }]);
+    try {
+      const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#6366F1"];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const { category } = await api.addCategory({ name, type, color, spaceId });
+      setCategories((prev) => [...prev, { ...category, id: String(category.id) }]);
+    } catch (e) {
+      console.error("addCategory error:", e);
+    }
   };
 
-  const updateCategory = (id: string, newName: string) => {
-    setCategories(prev => prev.map(c => c.id === id ? { ...c, name: newName } : c));
+  const updateCategory = async (id: string, newName: string): Promise<void> => {
+    const oldCat = categories.find((c) => c.id === id);
+    if (!oldCat || !newName.trim()) return;
+    try {
+      await api.updateCategory(id, { name: newName.trim() });
+      const cleanName = newName.trim();
+      setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name: cleanName } : c)));
+      // Обновляем название категории в транзакциях локально
+      setTransactions((prev) =>
+        prev.map((t) => (t.category === oldCat.name ? { ...t, category: cleanName } : t))
+      );
+    } catch (e) {
+      console.error("updateCategory error:", e);
+    }
   };
+
+  // ── АНАЛИТИКА ──────────────────────────────────────────────
 
   const getSummary = (monthDate: Date): SummaryData => {
     const start = startOfMonth(monthDate);
     const end = endOfMonth(monthDate);
-    let income = 0, expense = 0;
-    transactions.forEach(t => {
+    const today = new Date();
+    let income = 0;
+    let expense = 0;
+
+    transactions.forEach((t) => {
       if (!t.includeInBalance) return;
       if (t.date >= format(start, "yyyy-MM-dd") && t.date <= format(end, "yyyy-MM-dd")) {
         if (t.type === "INCOME") income += t.amount;
         else expense += t.amount;
       }
     });
-    const daysInMonth = end.getDate();
+
+    const sorted = [...transactions]
+      .filter((t) => t.includeInBalance)
+      .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+
     let runningBalance = 0;
+    let balanceEndOfMonth = 0;
     let cashGap: CashGap | null = null;
-    const today = new Date();
-    [...transactions].sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()).forEach(t => {
-      if (!t.includeInBalance) return;
+    const endOfMonthStr = format(end, "yyyy-MM-dd");
+
+    sorted.forEach((t) => {
       if (t.type === "INCOME") runningBalance += t.amount;
       else runningBalance -= t.amount;
-      if (runningBalance < 0 && !cashGap && differenceInCalendarDays(parseISO(t.date), today) >= 0) {
+
+      const tDate = parseISO(t.date);
+      if (runningBalance < 0 && !cashGap && differenceInCalendarDays(tDate, today) >= 0) {
         cashGap = { date: t.date, amount: runningBalance };
       }
+      if (t.date <= endOfMonthStr) {
+        balanceEndOfMonth = runningBalance;
+      }
     });
-    return { income, expense, balance: runningBalance, projectedBalance: runningBalance, cashGap, avgDailyIncome: income / daysInMonth, avgDailyExpense: expense / daysInMonth };
+
+    const daysInMonth = end.getDate();
+    return {
+      income,
+      expense,
+      balance: runningBalance,
+      projectedBalance: balanceEndOfMonth,
+      cashGap,
+      avgDailyIncome: daysInMonth > 0 ? income / daysInMonth : 0,
+      avgDailyExpense: daysInMonth > 0 ? expense / daysInMonth : 0,
+    };
   };
 
-  const openTransactionModal = (mode: "ADD" | "EDIT" | "CONFIRM", data?: Partial<Transaction> | Partial<Transaction>[]) => {
+  // ── МОДАЛКА ────────────────────────────────────────────────
+
+  const openTransactionModal = (
+    mode: "ADD" | "EDIT" | "CONFIRM",
+    data?: Partial<Transaction> | Partial<Transaction>[]
+  ) => {
     let drafts: Partial<Transaction>[] = [];
     if (Array.isArray(data)) drafts = data;
     else if (data) drafts = [data];
@@ -140,10 +214,29 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     setModalState({ isOpen: true, mode, drafts });
   };
 
-  const closeTransactionModal = () => setModalState(prev => ({ ...prev, isOpen: false }));
+  const closeTransactionModal = () => setModalState((prev) => ({ ...prev, isOpen: false }));
 
   return (
-    <FinanceContext.Provider value={{ transactions, categories, spaceId, loading, addTransaction, addTransactions, updateTransaction, deleteTransaction, deleteTransactions, addCategory, updateCategory, getSummary, pendingConfirmations, modalState, openTransactionModal, closeTransactionModal }}>
+    <FinanceContext.Provider
+      value={{
+        transactions,
+        categories,
+        spaceId,
+        loading,
+        addTransaction,
+        addTransactions,
+        updateTransaction,
+        deleteTransaction,
+        deleteTransactions,
+        addCategory,
+        updateCategory,
+        getSummary,
+        pendingConfirmations,
+        modalState,
+        openTransactionModal,
+        closeTransactionModal,
+      }}
+    >
       {children}
     </FinanceContext.Provider>
   );
