@@ -74,7 +74,7 @@ const TransactionModal: React.FC = () => {
     const createdOrUpdatedTransactions: Transaction[] = [];
     const processedCategories = new Set<string>();
   
-    drafts.forEach(d => {
+    for (const d of drafts) {
       const catName = d.category!.trim();
       const catType = d.type!;
       const uniqueKey = `${catName.toLowerCase()}-${catType}`;
@@ -108,7 +108,7 @@ const TransactionModal: React.FC = () => {
         const newTxs = await addTransactions(batch);
         createdOrUpdatedTransactions.push(...newTxs);
       }
-    });
+    }
   
     closeTransactionModal();
   };
