@@ -40,6 +40,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   useEffect(() => {
     async function init() {
+      console.log("API URL:", "https://infoenot-fcons-6ca6.twc1.net");
+      console.log("initData:", window.Telegram?.WebApp?.initData);
       try {
         await api.auth();
         const { space } = await api.getMySpace();
