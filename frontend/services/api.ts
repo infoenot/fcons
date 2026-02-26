@@ -19,6 +19,7 @@ async function request(path: string, options: RequestInit = {}) {
 
 export const api = {
   auth: () => request("/api/auth/telegram", { method: "POST" }),
+  getMySpace: () => request("/api/spaces/my"),
   getTransactions: (spaceId: number) => request(`/api/transactions?spaceId=${spaceId}`),
   addTransaction: (data: any) => request("/api/transactions", { method: "POST", body: JSON.stringify(data) }),
   deleteTransaction: (id: string) => request(`/api/transactions/${id}`, { method: "DELETE" }),
