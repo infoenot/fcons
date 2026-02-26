@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Bell } from 'lucide-react';
 import TransactionListModal from '../Modals/TransactionListModal';
@@ -7,19 +7,43 @@ const Header: React.FC = () => {
   const { getSummary, pendingConfirmations } = useFinance();
   const summary = getSummary(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
+  const [topInset, setTopInset] = useState(0);
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+
+    const updateInset = () => {
+      // safeAreaInset доступен в TG WebApp >= 7.3
+      const inset = tg.safeAreaInset?.top ?? tg.contentSafeAreaInset?.top ?? 0;
+      setTopInset(inset);
+    };
+
+    updateInset();
+    tg.onEvent?.('safeAreaChanged', updateInset);
+    tg.onEvent?.('contentSafeAreaChanged', updateInset);
+
+    return () => {
+      tg.offEvent?.('safeAreaChanged', updateInset);
+      tg.offEvent?.('contentSafeAreaChanged', updateInset);
+    };
+  }, []);
 
   const formatCurrency = (val: number) => {
-    const formatted = val.toLocaleString('ru-RU', { 
-      style: 'currency', 
-      currency: 'RUB', 
-      maximumFractionDigits: 0 
+    const formatted = val.toLocaleString('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 0
     });
     return val > 0 ? `+${formatted}` : formatted;
   };
 
   return (
     <>
-      <div className="bg-fin-bg sticky top-0 z-50 pt-8 pb-4 px-6 transition-all duration-300 shadow-sm w-full">
+      <div
+        className="bg-fin-bg sticky top-0 z-50 pb-4 px-6 transition-all duration-300 shadow-sm w-full"
+        style={{ paddingTop: `${Math.max(topInset + 8, 16)}px` }}
+      >
         <div className="flex justify-between items-center">
           <div className="flex items-baseline gap-3 select-none">
             <h1 className="text-3xl font-bold text-fin-text tracking-tight transition-colors">
@@ -29,8 +53,8 @@ const Header: React.FC = () => {
               Баланс
             </span>
           </div>
-          
-          <div 
+
+          <div
             className="relative cursor-pointer hover:opacity-80 transition-opacity p-2 -mr-2"
             onClick={() => setShowNotifications(true)}
           >
@@ -42,7 +66,7 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      <TransactionListModal 
+      <TransactionListModal
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
         title="Уведомления"
