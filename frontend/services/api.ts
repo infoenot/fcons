@@ -26,6 +26,7 @@ export const api = {
 
   // Spaces
   getMySpace: () => request("/api/spaces/my"),
+  clearAllData: () => request("/api/spaces/my/clear", { method: "DELETE" }),
 
   // Transactions
   getTransactions: (spaceId: number) =>

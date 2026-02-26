@@ -7,16 +7,16 @@ export interface Message {
   content: string;
   timestamp: Date;
   isAudio?: boolean;
-  duration?: number; // Duration in seconds
-  audioUrl?: string; // URL for playback
+  duration?: number;
+  audioUrl?: string;
   toolCall?: any;
-  transactions?: Transaction[]; // For interactive cards in chat
-  imageUrl?: string; // For uploaded images
+  transactions?: Transaction[];
+  imageUrl?: string;
   prompt?: {
     type: 'show' | 'delete';
     question: string;
-    transactions: Transaction[]; // Store transactions for confirmation
-    responded?: boolean; // Flag to disable buttons after response
+    transactions: Transaction[];
+    responded?: boolean;
   };
 }
 
@@ -24,49 +24,47 @@ interface ChatContextType {
   messages: Message[];
   addMessage: (msg: Message) => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  clearMessages: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
+const DEFAULT_MESSAGE: Message = {
+  id: '1',
+  role: 'assistant',
+  content: 'Привет! Я ваш финансовый ассистент. Расскажите о ваших расходах или доходах.',
+  timestamp: new Date(),
+};
+
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize from localStorage or default
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem('fin_chat_messages');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // We need to convert string timestamps back to Date objects
-        return parsed.map((m: any) => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }));
+        return parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
       }
     } catch (e) {
-      console.error("Failed to parse chat messages", e);
+      console.error('Failed to parse chat messages', e);
     }
-
-    // Default message if nothing saved
-    return [
-      { 
-        id: '1', 
-        role: 'assistant', 
-        content: 'Напоминаю: на завтра не запланировано никаких расходов. Диктуйте, я запланирую...',
-        timestamp: new Date()
-      }
-    ];
+    return [DEFAULT_MESSAGE];
   });
 
   const addMessage = (msg: Message) => {
     setMessages((prev) => [...prev, msg]);
   };
 
-  // Persist messages whenever they change
+  const clearMessages = () => {
+    localStorage.removeItem('fin_chat_messages');
+    setMessages([{ ...DEFAULT_MESSAGE, id: Date.now().toString(), timestamp: new Date() }]);
+  };
+
   useEffect(() => {
     localStorage.setItem('fin_chat_messages', JSON.stringify(messages));
   }, [messages]);
 
   return (
-    <ChatContext.Provider value={{ messages, addMessage, setMessages }}>
+    <ChatContext.Provider value={{ messages, addMessage, setMessages, clearMessages }}>
       {children}
     </ChatContext.Provider>
   );
@@ -74,6 +72,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useChat = () => {
   const context = useContext(ChatContext);
-  if (!context) throw new Error("useChat must be used within ChatProvider");
+  if (!context) throw new Error('useChat must be used within ChatProvider');
   return context;
 };
+
+// Алиас для обратной совместимости
+export const useChatContext = useChat;
