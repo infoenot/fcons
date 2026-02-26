@@ -67,7 +67,7 @@ const TransactionModal: React.FC = () => {
     ));
   };
 
-  const handleSaveAll = () => {
+  const handleSaveAll = async () => {
     const allValid = drafts.every(d => d.amount && d.amount > 0 && d.category && d.date);
     if (!allValid) return;
   
@@ -80,7 +80,7 @@ const TransactionModal: React.FC = () => {
       const uniqueKey = `${catName.toLowerCase()}-${catType}`;
   
       if (!categories.some(c => c.name.toLowerCase() === catName.toLowerCase() && c.type === catType) && !processedCategories.has(uniqueKey)) {
-        addCategory(catName, catType);
+        await addCategory(catName, catType);
         processedCategories.add(uniqueKey);
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: `Создал новую категорию: ${catName}.`, timestamp: new Date() }]);
       }
@@ -100,12 +100,12 @@ const TransactionModal: React.FC = () => {
         updateTransaction(updatedTx);
         createdOrUpdatedTransactions.push(updatedTx);
       } else if (baseData.recurrence === Recurrence.NONE) {
-        const newTx = addTransaction({ ...baseData, date: d.date! });
+        const newTx = await addTransaction({ ...baseData, date: d.date! });
         createdOrUpdatedTransactions.push(newTx);
       } else {
         const dates = generatePeriodicDates(d.date!, d.recurrenceEndDate!, baseData.recurrence);
         const batch = dates.map(date => ({ ...baseData, date }));
-        const newTxs = addTransactions(batch);
+        const newTxs = await addTransactions(batch);
         createdOrUpdatedTransactions.push(...newTxs);
       }
     });
