@@ -253,9 +253,9 @@ export default function CalendarScreen() {
                         aspect-square rounded-btn flex items-center justify-center text-sm font-medium cursor-pointer transition-all relative overflow-hidden border
                         ${!isCurrentMonth ? 'opacity-30' : ''}
                         ${today 
-                            ? 'bg-fin-accent/10 text-fin-accent border-fin-accent/50 dark:bg-fin-accent dark:border-fin-accentSec dark:text-white' 
+                            ? 'bg-fin-accent/15 text-fin-accent border-fin-accent/50' 
                             : isCashGap
-                            ? 'bg-[#191919] text-fin-error border-fin-border hover:brightness-110'
+                            ? 'bg-fin-error/10 text-fin-error border-fin-error/30 hover:brightness-110'
                             : hasTx 
                                 ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105' 
                                 : 'bg-transparent text-fin-textSec hover:bg-fin-bgSec border-transparent hover:border-fin-border transition-all'}
@@ -280,7 +280,7 @@ export default function CalendarScreen() {
                         onClick={() => setActiveView('categories')} 
                         className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                             activeView === 'categories' 
-                                ? 'bg-[#323233] text-white shadow-sm' 
+                                ? 'bg-fin-card text-fin-text shadow-sm border border-fin-border' 
                                 : 'text-fin-textSec hover:text-fin-text'
                         }`}
                     >
@@ -290,7 +290,7 @@ export default function CalendarScreen() {
                         onClick={() => setActiveView('transactions')} 
                         className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                             activeView === 'transactions' 
-                                ? 'bg-[#323233] text-white shadow-sm' 
+                                ? 'bg-fin-card text-fin-text shadow-sm border border-fin-border' 
                                 : 'text-fin-textSec hover:text-fin-text'
                         }`}
                     >
@@ -328,7 +328,7 @@ export default function CalendarScreen() {
                             <div 
                                 key={cat.id} 
                                 onClick={() => openCategoryDetails(cat)}
-                                className="bg-[#2E3432] rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-[#40514A] hover:border-fin-borderFocus"
+                                className="bg-fin-card rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-fin-border hover:border-fin-borderFocus"
                             >
                                 <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
