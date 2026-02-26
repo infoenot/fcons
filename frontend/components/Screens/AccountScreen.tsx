@@ -2,17 +2,18 @@ import React, { useRef, useState } from 'react';
 import { Moon, Sun, Trash2, Download, Upload, AlertTriangle, LogOut } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatContext } from '../../context/ChatContext';
+import { useFinance } from '../../context/FinanceContext';
 import { api } from '../../services/api';
 
 const AccountScreen: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { clearMessages } = useChatContext();
+  const { currentUser } = useFinance();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
 
   const handleExport = () => {
-    // Экспортируем только историю чата (данные теперь на сервере)
     const data = {
       messages: JSON.parse(localStorage.getItem('fin_chat_messages') || '[]'),
       theme: localStorage.getItem('fin_theme') || 'dark',
@@ -49,13 +50,10 @@ const AccountScreen: React.FC = () => {
   const confirmClearData = async () => {
     setClearing(true);
     try {
-      // Удаляем все данные на сервере
       await api.clearAllData();
-      // Чистим историю чата локально
       localStorage.removeItem('fin_chat_messages');
       clearMessages();
       setShowClearConfirm(false);
-      // Перезагружаем чтобы FinanceContext переинициализировался с пустыми данными
       window.location.reload();
     } catch (e) {
       console.error('Clear error:', e);
@@ -65,19 +63,37 @@ const AccountScreen: React.FC = () => {
     }
   };
 
+  // Инициалы из имени
+  const initials = currentUser?.name
+    ? currentUser.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+    : 'UI';
+
   return (
     <div className="p-6 h-full bg-fin-bg transition-colors duration-300 overflow-y-auto no-scrollbar relative">
       <h2 className="text-lg font-bold text-fin-text mb-6 tracking-wide uppercase">Профиль</h2>
 
+      {/* Карточка пользователя */}
       <div className="bg-fin-card rounded-card p-6 mb-6 flex items-center gap-5 border border-fin-border shadow-elevation-sm">
-        <div className="w-16 h-16 bg-fin-bgSec rounded-full flex items-center justify-center text-fin-accent font-bold text-xl border border-fin-border">
-          UI
-        </div>
+        {currentUser?.avatar ? (
+          <img
+            src={currentUser.avatar}
+            alt={currentUser.name}
+            className="w-16 h-16 rounded-full object-cover border border-fin-border"
+          />
+        ) : (
+          <div className="w-16 h-16 bg-fin-bgSec rounded-full flex items-center justify-center text-fin-accent font-bold text-xl border border-fin-border">
+            {initials}
+          </div>
+        )}
         <div>
-          <h3 className="text-lg font-bold text-fin-text">Пользователь</h3>
-          <p className="text-fin-textTert text-xs mt-1">ID: 8943-XJ</p>
+          <h3 className="text-lg font-bold text-fin-text">
+            {currentUser?.name || 'Пользователь'}
+          </h3>
+          <p className="text-fin-textTert text-xs mt-1">
+            ID: {currentUser?.telegramId || '—'}
+          </p>
           <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-fin-accent/10 border border-fin-accent/30 text-fin-accent text-[10px] font-bold uppercase tracking-wider">
-            Premium
+            {currentUser?.plan === 'premium' ? 'Premium' : 'Free'}
           </div>
         </div>
       </div>
@@ -163,7 +179,7 @@ const AccountScreen: React.FC = () => {
       )}
 
       <div className="mt-12 text-center text-[10px] text-fin-textTert uppercase tracking-widest pb-8">
-        System v3.1.3 (Stable)
+        System v3.1.4 (Stable)
       </div>
     </div>
   );

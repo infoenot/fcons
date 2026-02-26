@@ -3,6 +3,14 @@ import { Transaction, TransactionType, Category, SummaryData, CashGap, Recurrenc
 import { api } from "../services/api";
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays } from "date-fns";
 
+interface TelegramUser {
+  id: number;
+  telegramId: string;
+  name: string;
+  avatar: string | null;
+  plan: string;
+}
+
 interface ModalState {
   isOpen: boolean;
   mode: "ADD" | "EDIT" | "CONFIRM";
@@ -14,6 +22,7 @@ interface FinanceContextType {
   categories: Category[];
   spaceId: number | null;
   loading: boolean;
+  currentUser: TelegramUser | null;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<Transaction | null>;
   addTransactions: (ts: Omit<Transaction, "id">[]) => Promise<void>;
   updateTransaction: (t: Transaction) => Promise<void>;
@@ -35,14 +44,16 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [categories, setCategories] = useState<Category[]>([]);
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
   const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
   const [modalState, setModalState] = useState<ModalState>({ isOpen: false, mode: "ADD", drafts: [] });
 
-  // Инициализация: auth → space → данные
   useEffect(() => {
     async function init() {
       try {
-        await api.auth();
+        const { user } = await api.auth();
+        setCurrentUser(user);
+
         const { space } = await api.getMySpace();
         setSpaceId(space.id);
 
@@ -62,7 +73,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     init();
   }, []);
 
-  // Определяем просроченные плановые транзакции
   useEffect(() => {
     const today = new Date();
     const pending = transactions.filter((t) => {
@@ -72,8 +82,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
     setPendingConfirmations(pending);
   }, [transactions]);
-
-  // ── ТРАНЗАКЦИИ ─────────────────────────────────────────────
 
   const addTransaction = async (t: Omit<Transaction, "id">): Promise<Transaction | null> => {
     if (!spaceId) return null;
@@ -120,8 +128,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     for (const id of ids) await deleteTransaction(id);
   };
 
-  // ── КАТЕГОРИИ ──────────────────────────────────────────────
-
   const addCategory = async (name: string, type: TransactionType): Promise<void> => {
     if (!spaceId) return;
     try {
@@ -141,7 +147,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       await api.updateCategory(id, { name: newName.trim() });
       const cleanName = newName.trim();
       setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name: cleanName } : c)));
-      // Обновляем название категории в транзакциях локально
       setTransactions((prev) =>
         prev.map((t) => (t.category === oldCat.name ? { ...t, category: cleanName } : t))
       );
@@ -149,8 +154,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       console.error("updateCategory error:", e);
     }
   };
-
-  // ── АНАЛИТИКА ──────────────────────────────────────────────
 
   const getSummary = (monthDate: Date): SummaryData => {
     const start = startOfMonth(monthDate);
@@ -201,8 +204,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   };
 
-  // ── МОДАЛКА ────────────────────────────────────────────────
-
   const openTransactionModal = (
     mode: "ADD" | "EDIT" | "CONFIRM",
     data?: Partial<Transaction> | Partial<Transaction>[]
@@ -223,6 +224,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         categories,
         spaceId,
         loading,
+        currentUser,
         addTransaction,
         addTransactions,
         updateTransaction,
