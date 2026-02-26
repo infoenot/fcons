@@ -289,9 +289,9 @@ const CategorySelectionSheet: React.FC<CategorySheetProps> = ({ isOpen, onClose,
     const [newCategoryName, setNewCategoryName] = useState('');
     const filteredCategories = useMemo(() => categories.filter(c => c.type === activeType), [categories, activeType]);
 
-    const handleAddCategory = () => {
+    const handleAddCategory = async () => {
         if (newCategoryName.trim()) {
-            addCategory(newCategoryName.trim(), activeType);
+            await addCategory(newCategoryName.trim(), activeType);
             onSelect(newCategoryName.trim());
             setNewCategoryName('');
         }
