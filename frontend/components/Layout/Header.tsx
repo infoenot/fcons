@@ -19,7 +19,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <div className="bg-fin-bg sticky top-0 z-50 pb-4 px-6 transition-all duration-300 shadow-sm w-full" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 144px)' }}>
+      <div className="bg-fin-bg sticky top-0 z-50 pb-4 px-6 transition-all duration-300 shadow-sm w-full" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 50px)' }}>
         <div className="flex justify-between items-center">
           <div className="flex items-baseline gap-3 select-none">
             <h1 className="text-3xl font-bold text-fin-text tracking-tight transition-colors">
