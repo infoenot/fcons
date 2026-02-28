@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Transaction, TransactionType, Category, SummaryData, CashGap, Recurrence } from "../types";
+import { Transaction, TransactionType, Category, SummaryData, CashGap, Recurrence, SpaceMember } from "../types";
 import { api } from "../services/api";
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays } from "date-fns";
 
@@ -21,6 +21,9 @@ interface FinanceContextType {
   transactions: Transaction[];
   categories: Category[];
   spaceId: number | null;
+  spaceRole: string | null;
+  spaceMembers: SpaceMember[];
+  inviteLink: string | null;
   loading: boolean;
   currentUser: TelegramUser | null;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<Transaction | null>;
@@ -35,6 +38,7 @@ interface FinanceContextType {
   modalState: ModalState;
   openTransactionModal: (mode: "ADD" | "EDIT" | "CONFIRM", data?: Partial<Transaction> | Partial<Transaction>[]) => void;
   closeTransactionModal: () => void;
+  refreshMembers: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -43,6 +47,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [spaceId, setSpaceId] = useState<number | null>(null);
+  const [spaceRole, setSpaceRole] = useState<string | null>(null);
+  const [spaceMembers, setSpaceMembers] = useState<SpaceMember[]>([]);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
   const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
@@ -51,19 +58,50 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     async function init() {
       try {
+        // Проверяем инвайт-токен в URL (startapp параметр Telegram)
+        const tg = window.Telegram?.WebApp;
+        const startParam = tg?.initDataUnsafe?.start_param || "";
+        
         const { user } = await api.auth();
         setCurrentUser(user);
 
-        const { space } = await api.getMySpace();
-        setSpaceId(space.id);
+        let space, role;
 
-        const [txRes, catRes] = await Promise.all([
+        if (startParam.startsWith("invite_")) {
+          const token = startParam.replace("invite_", "");
+          try {
+            const joinRes = await api.joinSpace(token);
+            space = joinRes.space;
+            role = joinRes.role;
+          } catch (e) {
+            // Если токен невалидный — грузим свой space
+            const spaceRes = await api.getMySpace();
+            space = spaceRes.space;
+            role = spaceRes.role;
+          }
+        } else {
+          const spaceRes = await api.getMySpace();
+          space = spaceRes.space;
+          role = spaceRes.role;
+        }
+
+        setSpaceId(space.id);
+        setSpaceRole(role);
+
+        // Генерируем инвайт-ссылку
+        const BOT_NAME = "famcons_bot";
+        const APP_NAME = "finapp";
+        setInviteLink(`https://t.me/${BOT_NAME}/${APP_NAME}?startapp=invite_${space.inviteToken}`);
+
+        const [txRes, catRes, membersRes] = await Promise.all([
           api.getTransactions(space.id),
           api.getCategories(space.id),
+          api.getSpaceMembers(space.id),
         ]);
 
         setTransactions(txRes.transactions || []);
         setCategories(catRes.categories || []);
+        setSpaceMembers(membersRes.members || []);
       } catch (e) {
         console.error("Init error:", e);
       } finally {
@@ -82,6 +120,16 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
     setPendingConfirmations(pending);
   }, [transactions]);
+
+  const refreshMembers = async () => {
+    if (!spaceId) return;
+    try {
+      const res = await api.getSpaceMembers(spaceId);
+      setSpaceMembers(res.members || []);
+    } catch (e) {
+      console.error("refreshMembers error:", e);
+    }
+  };
 
   const addTransaction = async (t: Omit<Transaction, "id">): Promise<Transaction | null> => {
     if (!spaceId) return null;
@@ -223,6 +271,9 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         transactions,
         categories,
         spaceId,
+        spaceRole,
+        spaceMembers,
+        inviteLink,
         loading,
         currentUser,
         addTransaction,
@@ -237,6 +288,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         modalState,
         openTransactionModal,
         closeTransactionModal,
+        refreshMembers,
       }}
     >
       {children}

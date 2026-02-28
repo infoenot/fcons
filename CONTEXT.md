@@ -20,6 +20,7 @@
 - ACTUAL (факт) vs PLANNED (план) транзакции
 - Кассовый разрыв — если бегущий баланс уходит в минус
 - Space — рабочее пространство пользователя, создаётся автоматически при первом входе
+- SpaceMember — участник Space с ролью (owner / member_full / member_own)
 
 ## Архитектура
 
@@ -28,16 +29,33 @@
 2. Если initData пустой (браузер, не Telegram) — fallback { id: "1", first_name: "Test" }
 3. Бэкенд создаёт User в БД если не существует
 4. Фронт получает space через GET /api/spaces/my (создаётся автоматически)
-5. Грузит транзакции и категории по spaceId
+5. Если в startapp параметре есть invite_TOKEN — автоматически вступает в чужой space
+6. Грузит транзакции, категории и участников по spaceId
+
+### Роли участников Space
+- owner — создатель space, полный доступ, может управлять участниками, менять роли, очищать данные
+- member_full — может всё (добавлять, редактировать, удалять любые транзакции)
+- member_own — может только добавлять транзакции и редактировать/удалять СВОИ
+
+### Инвайт-система
+- У каждого Space есть уникальный inviteToken (cuid)
+- Инвайт-ссылка: https://t.me/famcons_bot/finapp?startapp=invite_{TOKEN}
+- При открытии приложения фронт читает initDataUnsafe.start_param
+- Если start_param начинается с invite_ — вызывает GET /api/spaces/join/{token}
+- Новый участник вступает с ролью member_full (owner может изменить)
 
 ### API endpoints
 - POST   /api/auth/telegram — авторизация
-- GET    /api/spaces/my — получить/создать space
-- DELETE /api/spaces/my/clear — удалить все транзакции и категории
-- GET    /api/transactions?spaceId=N — список транзакций
+- GET    /api/spaces/my — получить/создать space (возвращает { space, role })
+- DELETE /api/spaces/my/clear — удалить все транзакции и категории (только owner)
+- GET    /api/spaces/join/:token — вступить в space по инвайту
+- GET    /api/spaces/:spaceId/members — список участников с аватарами и ролями
+- PUT    /api/spaces/:spaceId/members/:userId/role — сменить роль (только owner)
+- DELETE /api/spaces/:spaceId/members/:userId — удалить участника (owner) или покинуть (сам)
+- GET    /api/transactions?spaceId=N — список транзакций (включает поле addedBy)
 - POST   /api/transactions — создать транзакцию
-- PUT    /api/transactions/:id — обновить транзакцию
-- DELETE /api/transactions/:id — удалить транзакцию
+- PUT    /api/transactions/:id — обновить (member_own — только свои)
+- DELETE /api/transactions/:id — удалить (member_own — только свои)
 - GET    /api/categories?spaceId=N — список категорий
 - POST   /api/categories — создать категорию
 - PUT    /api/categories/:id — обновить категорию
@@ -45,22 +63,23 @@
 
 ### Prisma схема (актуальная)
 Transaction: id, type, amount, date, category, status, recurrence, recurrenceEndDate, includeInBalance, description, addedById, spaceId
+  + include addedBy: { id, name, avatar, telegramId }
 Category: id, name, type, color, icon, spaceId
 User: id, telegramId, name, avatar, plan
 Space: id, name, inviteToken
-SpaceMember: userId, spaceId, role
+SpaceMember: userId, spaceId, role ("owner" | "member_full" | "member_own")
 
 ### Ключевые файлы фронтенда
 - frontend/index.tsx — инициализация Telegram WebApp (ready, expand, disableVerticalSwipes)
 - frontend/index.html — viewport-fit=cover для safe-area-inset
-- frontend/context/FinanceContext.tsx — вся логика работы с API, хранит currentUser
+- frontend/context/FinanceContext.tsx — вся логика работы с API, хранит currentUser, spaceRole, spaceMembers, inviteLink
 - frontend/context/ChatContext.tsx — история чата, clearMessages()
 - frontend/services/api.ts — все HTTP-запросы к бэкенду
 - frontend/services/polzaService.ts — интеграция с polza.ai (function calling)
 - frontend/components/Layout/Header.tsx — хедер с балансом, отступ сверху через paddingTop
 - frontend/components/Modals/TransactionModal.tsx — полноэкранная форма добавления транзакции
 - frontend/components/Screens/CalendarScreen.tsx — календарь, категории, транзакции
-- frontend/components/Screens/AccountScreen.tsx — профиль с реальными данными из Telegram
+- frontend/components/Screens/AccountScreen.tsx — профиль, управление участниками, инвайт
 
 ## Текущее состояние (актуально на 28.02.2026)
 ✅ Бэкенд задеплоен и работает
@@ -68,7 +87,7 @@ SpaceMember: userId, spaceId, role
 ✅ Auth через Telegram работает
 ✅ Транзакции сохраняются в БД
 ✅ Категории сохраняются в БД
-✅ Кнопка "Очистить все данные" удаляет данные с сервера
+✅ Кнопка "Очистить все данные" удаляет данные с сервера (только owner)
 ✅ Профиль показывает реальное имя и ID из Telegram
 ✅ Аватар пользователя из Telegram отображается в профиле
 ✅ Светлая тема — убраны хардкодные тёмные цвета в CalendarScreen
@@ -81,6 +100,24 @@ SpaceMember: userId, spaceId, role
 ✅ Переключатель Категории/Транзакции — контейнер прозрачный
 ✅ Счётчик транзакций в блоке категории (правый верхний угол)
 ✅ Баг с дублированием суммы в категориях с одинаковым именем — исправлен (фильтр по type)
+✅ Совместный бюджет — инвайт по ссылке, роли owner/member_full/member_own
+✅ Аватары участников в AccountScreen
+✅ Владелец может менять роли и удалять участников
+✅ member_own видит все транзакции, но редактирует/удаляет только свои
+✅ Transaction.addedBy — показывает кто добавил
+
+## Миграция БД (нужно выполнить после деплоя)
+```sql
+-- Обновить роль существующих владельцев
+UPDATE "SpaceMember" SET role = 'owner' WHERE role = 'member' AND id IN (
+  SELECT DISTINCT ON (s.id) sm.id FROM "SpaceMember" sm
+  JOIN "Space" s ON sm."spaceId" = s.id
+  ORDER BY s.id, sm.id ASC
+);
+
+-- Обновить остальных
+UPDATE "SpaceMember" SET role = 'member_full' WHERE role = 'member';
+```
 
 ## Периодические транзакции — как работает (важно)
 - При создании периодической транзакции (recurrence != NONE) генерируется массив отдельных транзакций
@@ -111,3 +148,4 @@ SpaceMember: userId, spaceId, role
 ## Что ещё не сделано / идеи
 - Кнопка "Выйти" (сейчас не работает)
 - Уведомления через бота о плановых платежах
+- Показать аватар автора рядом с каждой транзакцией в списке/календаре

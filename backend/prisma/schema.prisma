@@ -30,9 +30,10 @@ model Space {
   categories   Category[]
 }
 
+// role: "owner" | "member_full" | "member_own"
 model SpaceMember {
   id      Int    @id @default(autoincrement())
-  role    String @default("member")
+  role    String @default("member_full")
   user    User   @relation(fields: [userId], references: [id])
   userId  Int
   space   Space  @relation(fields: [spaceId], references: [id])

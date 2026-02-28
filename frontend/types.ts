@@ -12,6 +12,14 @@ export enum Recurrence {
 
 export type TransactionStatus = 'ACTUAL' | 'PLANNED';
 
+export interface SpaceMember {
+  id: number;
+  name: string;
+  avatar: string | null;
+  telegramId: string;
+  role: 'owner' | 'member_full' | 'member_own';
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
@@ -23,6 +31,8 @@ export interface Transaction {
   recurrenceEndDate?: string; // ISO Date string YYYY-MM-DD
   includeInBalance: boolean;
   description?: string;
+  addedBy?: { id: number; name: string; avatar: string | null; telegramId: string };
+  addedById?: number;
 }
 
 export interface Category {

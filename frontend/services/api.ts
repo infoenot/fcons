@@ -27,6 +27,15 @@ export const api = {
   // Spaces
   getMySpace: () => request("/api/spaces/my"),
   clearAllData: () => request("/api/spaces/my/clear", { method: "DELETE" }),
+  joinSpace: (token: string) => request(`/api/spaces/join/${token}`),
+  getSpaceMembers: (spaceId: number) => request(`/api/spaces/${spaceId}/members`),
+  updateMemberRole: (spaceId: number, userId: number, role: string) =>
+    request(`/api/spaces/${spaceId}/members/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }),
+  removeMember: (spaceId: number, userId: number) =>
+    request(`/api/spaces/${spaceId}/members/${userId}`, { method: "DELETE" }),
 
   // Transactions
   getTransactions: (spaceId: number) =>
