@@ -134,6 +134,12 @@ export default function CalendarScreen() {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
+  const getCategoryCount = (catName: string) => {
+    return monthTransactions.filter(t =>
+      t.category.trim().toLowerCase() === catName.trim().toLowerCase()
+    ).length;
+  };
+
   const getCategoryTotal = (catName: string) => {
     let total = 0;
     monthTransactions.forEach(t => {
@@ -331,9 +337,12 @@ export default function CalendarScreen() {
                             <div 
                                 key={cat.id} 
                                 onClick={() => openCategoryDetails(cat)}
-                                className="bg-fin-card rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-fin-border hover:border-fin-borderFocus"
+                                className="bg-fin-card rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 border border-fin-border hover:border-fin-borderFocus relative"
                             >
-                                <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                    {getCategoryCount(cat.name) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name)}</span>}
+                                </div>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
                                     {total > 0 ? '+' : ''}{total.toLocaleString('ru-RU')} ₽
                                 </span>
@@ -346,9 +355,12 @@ export default function CalendarScreen() {
                             <div 
                                 key={cat.id} 
                                 onClick={() => openCategoryDetails(cat)}
-                                className="bg-transparent border-fin-border rounded-card p-4 flex flex-col justify-between h-24 transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
+                                className="bg-transparent border-fin-border rounded-card p-4 flex flex-col justify-between h-24 transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border relative"
                             >
-                                <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
+                                    {getCategoryCount(cat.name) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name)}</span>}
+                                </div>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
                                     {total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
                                 </span>
