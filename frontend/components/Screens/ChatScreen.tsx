@@ -28,7 +28,19 @@ export default function ChatScreen() {
   const recordingStartTimeRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { openTransactionModal, transactions, deleteTransactions, spaceMembers } = useFinance();
+  const { openTransactionModal, transactions, deleteTransactions, spaceMembers, currentUser } = useFinance();
+
+  // Краткая сводка транзакций для системного промпта
+  const getBudgetSummary = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const thisMonth = today.slice(0, 7); // YYYY-MM
+    const monthTx = transactions.filter(t => t.date.startsWith(thisMonth) && t.includeInBalance);
+    const income = monthTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
+    const expense = monthTx.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+    const balance = transactions.filter(t => t.includeInBalance).reduce((s, t) => s + (t.type === 'INCOME' ? t.amount : -t.amount), 0);
+    const planned = transactions.filter(t => t.status === 'PLANNED' && t.date >= today).length;
+    return `Баланс: ${balance.toLocaleString('ru-RU')} ₽. В этом месяце: доходы ${income.toLocaleString('ru-RU')} ₽, расходы ${expense.toLocaleString('ru-RU')} ₽. Плановых платежей впереди: ${planned}. Всего транзакций в базе: ${transactions.length}.`;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -131,7 +143,7 @@ export default function ChatScreen() {
             const mimeType = audioBlob.type || 'audio/webm';
             
             try {
-                const result = await generateAIResponse("", history, undefined, base64Audio, mimeType, spaceMembers.map(m => m.name));
+                const result = await generateAIResponse("", history, undefined, base64Audio, mimeType, spaceMembers.map(m => m.name), getBudgetSummary());
                 await processAIResult(result);
             } catch (e: any) {
                 console.error(e);
@@ -208,7 +220,7 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const result = await generateAIResponse(userMsg.content, history, undefined, undefined, undefined, spaceMembers.map(m => m.name));
+      const result = await generateAIResponse(userMsg.content, history, undefined, undefined, undefined, spaceMembers.map(m => m.name), getBudgetSummary());
       await processAIResult(result);
     } catch (error: any) {
       let errorMessage = "Ошибка соединения.";
@@ -403,7 +415,7 @@ export default function ChatScreen() {
           setLoading(true);
 
           try {
-             const result = await generateAIResponse("", history, base64, undefined, undefined, spaceMembers.map(m => m.name));
+             const result = await generateAIResponse("", history, base64, undefined, undefined, spaceMembers.map(m => m.name), getBudgetSummary());
              await processAIResult(result);
           } catch (err: any) {
               console.error(err);

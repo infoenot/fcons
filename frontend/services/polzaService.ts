@@ -103,21 +103,25 @@ const tools = [
 
 // ── Системный промпт ─────────────────────────────────────────
 
-const getSystemPrompt = (memberNames?: string[]) => {
+const getSystemPrompt = (memberNames?: string[], summary?: string) => {
   const today = new Date().toISOString().split("T")[0];
   const todayFormatted = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "short" });
   const membersLine = memberNames && memberNames.length > 1
     ? `\nУчастники совместного бюджета: ${memberNames.join(", ")}.`
     : "";
-  return `Ты — финансовый ассистент семейного бюджета. Сегодня ${todayFormatted} (${today}).${membersLine}
+  const summaryLine = summary ? `\n\nТЕКУЩИЕ ДАННЫЕ БЮДЖЕТА:\n${summary}` : "";
+  return `Ты — финансовый ассистент семейного бюджета. Сегодня ${todayFormatted} (${today}).${membersLine}${summaryLine}
+
+ВАЖНО: У тебя ЕСТЬ доступ к транзакциям пользователя через инструмент getTransactions. Никогда не говори "у меня нет доступа" или "предоставьте информацию" — просто вызови getTransactions и ответь на основе реальных данных.
 
 Твои задачи:
 1. Распознавать траты и доходы → сохранять через addTransaction.
-2. Показывать транзакции по запросу → использовать getTransactions.
+2. Анализировать бюджет, искать транзакции → использовать getTransactions (всегда, когда нужны данные).
 3. Считать баланс → использовать getBalance.
 4. Распознавать фото чека → добавлять все позиции как транзакции.
 
 Правила ответов:
+- Когда спрашивают про бюджет, расходы, проблемы — сначала вызови getTransactions, потом отвечай
 - После создания 1 транзакции: напиши одну строку "Записал: {категория} {сумма} ₽"
 - После создания нескольких: напиши итог "Записал {N} операций на {сумма} ₽" и перечисли кратко
 - Когда ищешь транзакции конкретного участника (жена, муж, имя) — используй параметр addedByName
@@ -193,7 +197,8 @@ export const generateAIResponse = async (
   imageBase64?: string,
   audioBase64?: string,
   audioMimeType?: string,
-  memberNames?: string[]
+  memberNames?: string[],
+  summary?: string
 ) => {
   let finalPrompt = prompt;
 
@@ -215,7 +220,7 @@ export const generateAIResponse = async (
   }
 
   const messages: any[] = [
-    { role: "system", content: getSystemPrompt(memberNames) },
+    { role: "system", content: getSystemPrompt(memberNames, summary) },
   ];
 
   history.slice(-10).forEach((msg) => {
