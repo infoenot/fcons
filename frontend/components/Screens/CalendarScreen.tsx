@@ -253,13 +253,15 @@ export default function CalendarScreen() {
                         className={`
                         aspect-square rounded-btn flex items-center justify-center text-sm font-medium cursor-pointer transition-all relative overflow-hidden border
                         ${!isCurrentMonth ? 'opacity-30' : ''}
-                        ${today 
-                            ? 'bg-fin-accent/15 text-fin-accent border-fin-accent/50' 
-                            : isCashGap
-                            ? 'bg-fin-error/10 text-fin-error border-fin-error/30 hover:brightness-110'
-                            : hasTx 
-                                ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105' 
-                                : 'bg-transparent text-fin-textSec hover:bg-fin-bgSec border-transparent hover:border-fin-border transition-all'}
+                        ${today
+                            ? 'bg-fin-accent text-white border-fin-accent'
+                            : isCashGap && hasTx
+                            ? 'bg-fin-bgSec text-fin-error border-fin-border hover:brightness-110'
+                            : isCashGap && !hasTx
+                            ? 'bg-transparent text-fin-error border-dashed border-fin-error/40'
+                            : hasTx
+                                ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105'
+                                : 'bg-transparent text-fin-textTert border-transparent'}
                         `}
                     >
                         <div className="relative z-10 flex flex-col items-center">
