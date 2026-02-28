@@ -346,7 +346,7 @@ export default function CalendarScreen() {
                             <div 
                                 key={cat.id} 
                                 onClick={() => openCategoryDetails(cat)}
-                                className="bg-fin-card border-fin-border rounded-card p-4 flex flex-col justify-between h-24 shadow-sm transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
+                                className="bg-transparent border-fin-border rounded-card p-4 flex flex-col justify-between h-24 transition-all cursor-pointer active:scale-95 hover:border-fin-borderFocus border"
                             >
                                 <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
