@@ -73,6 +73,10 @@ const tools = [
             enum: ["ACTUAL", "PLANNED"],
             description: "Статус: ACTUAL (факт) или PLANNED (план).",
           },
+          addedByName: {
+            type: "string",
+            description: "Имя участника — показать только его транзакции. Например: 'Мария', 'жена', 'я'.",
+          },
         },
       },
     },
@@ -99,16 +103,25 @@ const tools = [
 
 // ── Системный промпт ─────────────────────────────────────────
 
-const getSystemPrompt = () => {
+const getSystemPrompt = (memberNames?: string[]) => {
   const today = new Date().toISOString().split("T")[0];
-  return `Ты — продвинутый финансовый ассистент. Сегодня ${today}.
-Твои задачи:
-1. Распознавать траты и доходы и сохранять их через addTransaction.
-2. Искать транзакции (включая ПЛАНОВЫЕ) через getTransactions.
-3. Считать баланс через getBalance.
-4. Если пользователь прислал фото чека — распознай все позиции и добавь их как транзакции.
+  const todayFormatted = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "short" });
+  const membersLine = memberNames && memberNames.length > 1
+    ? `\nУчастники совместного бюджета: ${memberNames.join(", ")}.`
+    : "";
+  return `Ты — финансовый ассистент семейного бюджета. Сегодня ${todayFormatted} (${today}).${membersLine}
 
-Отвечай всегда на русском языке, кратко и по делу.`;
+Твои задачи:
+1. Распознавать траты и доходы → сохранять через addTransaction.
+2. Показывать транзакции по запросу → использовать getTransactions.
+3. Считать баланс → использовать getBalance.
+4. Распознавать фото чека → добавлять все позиции как транзакции.
+
+Правила ответов:
+- После создания 1 транзакции: напиши одну строку "Записал: {категория} {сумма} ₽"
+- После создания нескольких: напиши итог "Записал {N} операций на {сумма} ₽" и перечисли кратко
+- Когда ищешь транзакции конкретного участника (жена, муж, имя) — используй параметр addedByName
+- Отвечай кратко, на русском. Без лишних вступлений.\`;
 };
 
 // ── Вспомогательная функция запроса к Polza.ai ───────────────
@@ -179,7 +192,8 @@ export const generateAIResponse = async (
   history: { role: "user" | "assistant"; content: string }[] = [],
   imageBase64?: string,
   audioBase64?: string,
-  audioMimeType?: string
+  audioMimeType?: string,
+  memberNames?: string[]
 ) => {
   let finalPrompt = prompt;
 
@@ -201,7 +215,7 @@ export const generateAIResponse = async (
   }
 
   const messages: any[] = [
-    { role: "system", content: getSystemPrompt() },
+    { role: "system", content: getSystemPrompt(memberNames) },
   ];
 
   history.slice(-10).forEach((msg) => {

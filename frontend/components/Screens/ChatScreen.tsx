@@ -131,7 +131,7 @@ export default function ChatScreen() {
             const mimeType = audioBlob.type || 'audio/webm';
             
             try {
-                const result = await generateAIResponse("", history, undefined, base64Audio, mimeType);
+                const result = await generateAIResponse("", history, undefined, base64Audio, mimeType, spaceMembers.map(m => m.name));
                 await processAIResult(result);
             } catch (e: any) {
                 console.error(e);
@@ -208,7 +208,7 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const result = await generateAIResponse(userMsg.content, history);
+      const result = await generateAIResponse(userMsg.content, history, undefined, undefined, undefined, spaceMembers.map(m => m.name));
       await processAIResult(result);
     } catch (error: any) {
       let errorMessage = "Ошибка соединения.";
@@ -289,7 +289,7 @@ export default function ChatScreen() {
                      includeInBalance: true 
                  });
              } else if (call.name === 'getTransactions') {
-                 const { startDate, endDate, category, type, status } = call.args;
+                 const { startDate, endDate, category, type, status, addedByName } = call.args;
                  let filtered = transactions;
                  
                  if (type) filtered = filtered.filter(t => t.type === type);
@@ -297,6 +297,15 @@ export default function ChatScreen() {
                  if (startDate) filtered = filtered.filter(t => t.date >= startDate);
                  if (endDate) filtered = filtered.filter(t => t.date <= endDate);
                  if (status) filtered = filtered.filter(t => t.status === status);
+                 if (addedByName) {
+                   const selfNames = ['я', 'мои', 'мои транзакции', 'моё'];
+                   const isSelf = selfNames.some(s => addedByName.toLowerCase().includes(s));
+                   if (isSelf) {
+                     filtered = filtered.filter(t => t.addedBy?.telegramId === currentUser?.telegramId?.toString());
+                   } else {
+                     filtered = filtered.filter(t => t.addedBy?.name.toLowerCase().includes(addedByName.toLowerCase()));
+                   }
+                 }
 
                  if (filtered.length === 0) {
                     setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: "Транзакции не найдены.", timestamp: new Date() }]);
@@ -394,7 +403,7 @@ export default function ChatScreen() {
           setLoading(true);
 
           try {
-             const result = await generateAIResponse("", history, base64);
+             const result = await generateAIResponse("", history, base64, undefined, undefined, spaceMembers.map(m => m.name));
              await processAIResult(result);
           } catch (err: any) {
               console.error(err);
@@ -420,7 +429,7 @@ export default function ChatScreen() {
 
   const getMessageDateLabel = (date: Date, role: 'user' | 'assistant') => {
       const name = role === 'user' ? 'Вы' : 'Ассистент';
-      const dateStr = format(date, 'd MMM, HH:mm', { locale: ru }).replace('.', '');
+      const dateStr = format(date, 'd MMM, eee, HH:mm', { locale: ru }).replace(/\./g, '');
       return `${name} (${dateStr})`;
   };
 
