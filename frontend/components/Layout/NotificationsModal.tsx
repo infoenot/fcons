@@ -10,7 +10,7 @@ interface NotificationsModalProps {
 }
 
 const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
-  const { pendingConfirmations, updateTransaction, deleteTransaction } = useFinance();
+  const { pendingConfirmations, updateTransaction, deleteTransaction, spaceMembers } = useFinance();
   const { setMessages } = useChat();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{amount: string, date: string}>({ amount: '', date: '' });
@@ -130,7 +130,17 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
                       <>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className={`w-1 h-8 rounded-full ${tx.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-textSec'}`}></div>
+                                {spaceMembers.length > 1 && tx.addedBy ? (
+                                    tx.addedBy.avatar ? (
+                                        <img src={tx.addedBy.avatar} alt={tx.addedBy.name} title={tx.addedBy.name} className="w-8 h-8 rounded-full object-cover border border-fin-border shrink-0" />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs shrink-0" title={tx.addedBy.name}>
+                                            {tx.addedBy.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className={`w-1 h-8 rounded-full ${tx.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-textSec'}`}></div>
+                                )}
                                 <div>
                                     <div className="font-bold text-fin-text text-sm">{tx.category}</div>
                                     <div className="text-[10px] text-fin-textTert font-medium uppercase tracking-wider">

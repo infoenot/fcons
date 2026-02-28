@@ -28,7 +28,7 @@ export default function ChatScreen() {
   const recordingStartTimeRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { openTransactionModal, transactions, deleteTransactions } = useFinance();
+  const { openTransactionModal, transactions, deleteTransactions, spaceMembers } = useFinance();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -513,6 +513,7 @@ export default function ChatScreen() {
                                  key={tx.id} 
                                  transaction={tx} 
                                  onEdit={() => openTransactionModal('EDIT', tx)}
+                                 showAvatar={spaceMembers.length > 1}
                                />
                              ))}
                           </div>
@@ -586,31 +587,45 @@ export default function ChatScreen() {
 interface ChatTransactionCardProps {
   transaction: Transaction;
   onEdit: () => void;
+  showAvatar?: boolean;
 }
 
-const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, onEdit }) => {
+const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, onEdit, showAvatar }) => {
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const author = transaction.addedBy;
+  const initials = author?.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '';
   return (
     <div 
       onClick={onEdit}
-      className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:bg-fin-card transition-all w-full"
+      className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex items-center cursor-pointer hover:bg-fin-card transition-all w-full"
     >
-      {/* Top Row */}
-      <div className="flex justify-between items-start">
-        <span className="font-semibold text-fin-text text-base truncate">{transaction.category}</span>
-        <span className={`font-medium text-base whitespace-nowrap ${transaction.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-          {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString('ru-RU')} ₽
-        </span>
-      </div>
-      {/* Bottom Row */}
-      <div className="flex justify-between items-end">
-        <span className="text-xs text-fin-textTert">
-          {capitalize(format(parseISO(transaction.date), 'd MMM, eee', { locale: ru }))}.
-        </span>
-        <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
-          <span className="text-xs font-semibold text-fin-textSec">
-            {transaction.status === 'PLANNED' ? 'П' : 'Ф'}
+      {showAvatar && author && (
+        <div className="shrink-0 mr-3 self-center" title={author.name}>
+          {author.avatar ? (
+            <img src={author.avatar} alt={author.name} className="w-8 h-8 rounded-full object-cover border border-fin-border" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs">{initials}</div>
+          )}
+        </div>
+      )}
+      <div className="flex-1 flex flex-col gap-3">
+        {/* Top Row */}
+        <div className="flex justify-between items-start">
+          <span className="font-semibold text-fin-text text-base truncate">{transaction.category}</span>
+          <span className={`font-medium text-base whitespace-nowrap ${transaction.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+            {transaction.type === 'INCOME' ? '+' : '-'}{transaction.amount.toLocaleString('ru-RU')} ₽
           </span>
+        </div>
+        {/* Bottom Row */}
+        <div className="flex justify-between items-end">
+          <span className="text-xs text-fin-textTert">
+            {capitalize(format(parseISO(transaction.date), 'd MMM, eee', { locale: ru }))}.
+          </span>
+          <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+            <span className="text-xs font-semibold text-fin-textSec">
+              {transaction.status === 'PLANNED' ? 'П' : 'Ф'}
+            </span>
+          </div>
         </div>
       </div>
     </div>

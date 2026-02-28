@@ -17,7 +17,7 @@ interface DisplayTransaction extends Transaction {
 }
 
 export default function CalendarScreen() {
-  const { transactions, categories, addCategory, openTransactionModal, updateCategory } = useFinance();
+  const { transactions, categories, addCategory, openTransactionModal, updateCategory, spaceMembers } = useFinance();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeView, setActiveView] = useState<'categories' | 'transactions'>('categories');
   const [includePlanned, setIncludePlanned] = useState(true);
@@ -379,32 +379,48 @@ export default function CalendarScreen() {
             ) : (
                 <div className="space-y-2 animate-in fade-in duration-300">
                     {monthTransactions.length > 0 ? (
-                        monthTransactions.map((t, index) => (
+                        monthTransactions.map((t, index) => {
+                            const showAvatars = spaceMembers.length > 1;
+                            const author = t.addedBy;
+                            const initials = author?.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '';
+                            return (
                             <div 
                                 key={`${t.id}-${t.displayDate}-${index}`} 
                                 onClick={() => openTransactionModal('EDIT', t)} 
-                                className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:bg-fin-card transition-all"
+                                className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex items-center cursor-pointer hover:bg-fin-card transition-all"
                             >
-                                {/* Top Row */}
-                                <div className="flex justify-between items-start">
-                                    <span className="font-semibold text-fin-text text-base truncate">{t.category}</span>
-                                    <span className={`font-medium text-base whitespace-nowrap ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
-                                        {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
-                                    </span>
-                                </div>
-                                {/* Bottom Row */}
-                                <div className="flex justify-between items-end">
-                                    <span className="text-xs text-fin-textTert">
-                                        {capitalize(format(parseISO(t.displayDate), 'd MMM, eee', { locale: ru }))}.
-                                    </span>
-                                    <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
-                                        <span className="text-xs font-semibold text-fin-textSec">
-                                            {t.status === 'PLANNED' ? 'П' : 'Ф'}
+                                {showAvatars && author && (
+                                    <div className="shrink-0 mr-3 self-center" title={author.name}>
+                                        {author.avatar ? (
+                                            <img src={author.avatar} alt={author.name} className="w-8 h-8 rounded-full object-cover border border-fin-border" />
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs">{initials}</div>
+                                        )}
+                                    </div>
+                                )}
+                                <div className="flex-1 flex flex-col gap-3">
+                                    {/* Top Row */}
+                                    <div className="flex justify-between items-start">
+                                        <span className="font-semibold text-fin-text text-base truncate">{t.category}</span>
+                                        <span className={`font-medium text-base whitespace-nowrap ${t.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                            {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString('ru-RU')} ₽
                                         </span>
+                                    </div>
+                                    {/* Bottom Row */}
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-xs text-fin-textTert">
+                                            {capitalize(format(parseISO(t.displayDate), 'd MMM, eee', { locale: ru }))}.
+                                        </span>
+                                        <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
+                                            <span className="text-xs font-semibold text-fin-textSec">
+                                                {t.status === 'PLANNED' ? 'П' : 'Ф'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="text-center py-12 text-fin-textTert text-sm">
                             Нет транзакций в этом месяце.
