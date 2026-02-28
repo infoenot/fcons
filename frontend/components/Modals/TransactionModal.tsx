@@ -148,10 +148,13 @@ const TransactionModal: React.FC = () => {
 
   const generatePeriodicDates = (start: string, end: string, recurrence: Recurrence) => {
     const dates: string[] = [];
-    let current = parseISO(start);
-    const endDate = parseISO(end);
-    if (isBefore(endDate, current)) return [start];
-    while (current <= endDate || isSameDay(current, endDate)) {
+    // Используем локальные даты чтобы избежать смещения timezone
+    const [sy, sm, sd] = start.split('-').map(Number);
+    const [ey, em, ed] = end.split('-').map(Number);
+    let current = new Date(sy, sm - 1, sd);
+    const endDate = new Date(ey, em - 1, ed);
+    if (endDate < current) return [start];
+    while (current <= endDate) {
       dates.push(format(current, 'yyyy-MM-dd'));
       if (recurrence === Recurrence.WEEKLY) current = addDays(current, 7);
       else if (recurrence === Recurrence.MONTHLY) current = addMonths(current, 1);
