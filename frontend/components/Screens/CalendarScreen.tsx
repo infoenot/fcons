@@ -275,8 +275,8 @@ export default function CalendarScreen() {
         </div>
 
         {/* Tabbed View Controls */}
-        <div className="px-1 mb-6">
-            <div className="flex items-center justify-between mb-[38px] px-2">
+        <div className="mb-6">
+            <div className="flex items-center justify-between mb-[38px]">
                 {/* Segmented Control */}
                 <div className="flex bg-transparent p-1 rounded-full w-auto border border-fin-border">
                     <button 
@@ -357,7 +357,7 @@ export default function CalendarScreen() {
                     })}
                      <button 
                         onClick={() => setIsAddCategoryOpen(true)}
-                        className="bg-transparent border-2 border-dashed border-fin-border/50 hover:border-fin-accent/50 dark:bg-fin-bgSec dark:border-fin-border dark:border-solid dark:border rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
+                        className="bg-transparent border border-dashed border-fin-border hover:border-fin-accent rounded-card p-4 flex flex-col items-center justify-center gap-2 text-fin-textTert hover:text-fin-accent transition-all h-24 group"
                         >
                             <div className="flex items-center justify-center group-hover:scale-110 transition-transform text-fin-text">
                                 <Plus size={24} />
