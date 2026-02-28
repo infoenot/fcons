@@ -31,16 +31,16 @@
 5. Грузит транзакции и категории по spaceId
 
 ### API endpoints
-- POST /api/auth/telegram — авторизация
-- GET  /api/spaces/my — получить/создать space
+- POST   /api/auth/telegram — авторизация
+- GET    /api/spaces/my — получить/создать space
 - DELETE /api/spaces/my/clear — удалить все транзакции и категории
-- GET  /api/transactions?spaceId=N — список транзакций
-- POST /api/transactions — создать транзакцию
-- PUT  /api/transactions/:id — обновить транзакцию
+- GET    /api/transactions?spaceId=N — список транзакций
+- POST   /api/transactions — создать транзакцию
+- PUT    /api/transactions/:id — обновить транзакцию
 - DELETE /api/transactions/:id — удалить транзакцию
-- GET  /api/categories?spaceId=N — список категорий
-- POST /api/categories — создать категорию
-- PUT  /api/categories/:id — обновить категорию
+- GET    /api/categories?spaceId=N — список категорий
+- POST   /api/categories — создать категорию
+- PUT    /api/categories/:id — обновить категорию
 - DELETE /api/categories/:id — удалить категорию
 
 ### Prisma схема (актуальная)
@@ -51,21 +51,37 @@ Space: id, name, inviteToken
 SpaceMember: userId, spaceId, role
 
 ### Ключевые файлы фронтенда
-- frontend/context/FinanceContext.tsx — вся логика работы с API и состоянием
+- frontend/index.tsx — инициализация Telegram WebApp (ready, expand, disableVerticalSwipes)
+- frontend/index.html — viewport-fit=cover для safe-area-inset
+- frontend/context/FinanceContext.tsx — вся логика работы с API, хранит currentUser
 - frontend/context/ChatContext.tsx — история чата, clearMessages()
 - frontend/services/api.ts — все HTTP-запросы к бэкенду
 - frontend/services/polzaService.ts — интеграция с polza.ai (function calling)
+- frontend/components/Layout/Header.tsx — хедер с балансом, отступ сверху через paddingTop
+- frontend/components/Modals/TransactionModal.tsx — полноэкранная форма добавления транзакции
+- frontend/components/Screens/CalendarScreen.tsx — календарь, категории, транзакции
+- frontend/components/Screens/AccountScreen.tsx — профиль с реальными данными из Telegram
 
-## Текущее состояние (актуально на 26.02.2026)
+## Текущее состояние (актуально на 28.02.2026)
 ✅ Бэкенд задеплоен и работает
 ✅ Фронтенд задеплоен
 ✅ Auth через Telegram работает
 ✅ Транзакции сохраняются в БД
 ✅ Категории сохраняются в БД
 ✅ Кнопка "Очистить все данные" удаляет данные с сервера
+✅ Профиль показывает реальное имя и ID из Telegram
+✅ Светлая тема — убраны хардкодные тёмные цвета в CalendarScreen
+✅ Форма добавления транзакции переделана: цифровая клавиатура, чипсы категорий, быстрые кнопки даты
+✅ Telegram WebApp инициализируется через tg.ready() + tg.expand()
+
+## Известные проблемы
+- Кнопка "Закрыть" Telegram при открытии через бота перекрывает хедер.
+  Решение: в Header.tsx отступ сверху задаётся через style={{ paddingTop: '50px' }}
+  (строка 22). Можно подбирать вручную если не подходит.
+  Попытки через safeAreaInset JS и env(safe-area-inset-top) CSS не дали стабильного результата.
 
 ## Что ещё не сделано / идеи
-- Показывать реальное имя и аватар пользователя из Telegram в профиле
+- Кнопка "Выйти" (сейчас не работает)
 - Уведомления через бота о плановых платежах
 - Повторяющиеся транзакции (recurrence логика на фронте)
-- Кнопка "Выйти" (сейчас не работает)
+- Аватар пользователя из Telegram в профиле
