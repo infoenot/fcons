@@ -140,7 +140,7 @@ const TransactionModal: React.FC = () => {
       await addTransaction({ ...baseData, date: activeDraft.date! });
     } else {
       const dates = generatePeriodicDates(activeDraft.date!, activeDraft.recurrenceEndDate!, baseData.recurrence);
-      await addTransactions(dates.map(date => ({ ...baseData, date })));
+      await addTransactions(dates.map(date => ({ ...baseData, date, recurrence: Recurrence.NONE })));
     }
 
     closeTransactionModal();
