@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { Transaction, TransactionType, Category, SummaryData, CashGap, Recurrence, SpaceMember } from "../types";
 import { api } from "../services/api";
 import { format, startOfMonth, endOfMonth, parseISO, differenceInCalendarDays } from "date-fns";
+
+const POLL_INTERVAL = 15000; // 15 секунд
 
 interface TelegramUser {
   id: number;
@@ -55,13 +57,24 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [pendingConfirmations, setPendingConfirmations] = useState<Transaction[]>([]);
   const [modalState, setModalState] = useState<ModalState>({ isOpen: false, mode: "ADD", drafts: [] });
 
+  // Храним spaceId в ref для использования в polling без зависимостей
+  const spaceIdRef = useRef<number | null>(null);
+  const modalOpenRef = useRef(false);
+
+  useEffect(() => {
+    spaceIdRef.current = spaceId;
+  }, [spaceId]);
+
+  useEffect(() => {
+    modalOpenRef.current = modalState.isOpen;
+  }, [modalState.isOpen]);
+
   useEffect(() => {
     async function init() {
       try {
-        // Проверяем инвайт-токен в URL (startapp параметр Telegram)
-        const tg = window.Telegram?.WebApp;
+        const tg = (window as any).Telegram?.WebApp;
         const startParam = tg?.initDataUnsafe?.start_param || "";
-        
+
         const { user } = await api.auth();
         setCurrentUser(user);
 
@@ -73,8 +86,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             const joinRes = await api.joinSpace(token);
             space = joinRes.space;
             role = joinRes.role;
-          } catch (e) {
-            // Если токен невалидный — грузим свой space
+          } catch {
             const spaceRes = await api.getMySpace();
             space = spaceRes.space;
             role = spaceRes.role;
@@ -88,7 +100,6 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         setSpaceId(space.id);
         setSpaceRole(role);
 
-        // Генерируем инвайт-ссылку
         const BOT_NAME = "famcons_bot";
         const APP_NAME = "finapp";
         setInviteLink(`https://t.me/${BOT_NAME}/${APP_NAME}?startapp=invite_${space.inviteToken}`);
@@ -109,6 +120,41 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
     }
     init();
+  }, []);
+
+  // Polling — обновляем транзакции в фоне
+  useEffect(() => {
+    const poll = async () => {
+      const sid = spaceIdRef.current;
+      if (!sid) return;
+      // Не обновляем если открыта модалка (чтобы не сбить форму)
+      if (modalOpenRef.current) return;
+
+      try {
+        const txRes = await api.getTransactions(sid);
+        const incoming: Transaction[] = txRes.transactions || [];
+
+        setTransactions(prev => {
+          // Сравниваем по JSON чтобы не делать лишних ре-рендеров
+          const prevIds = new Set(prev.map(t => t.id));
+          const nextIds = new Set(incoming.map((t: Transaction) => t.id));
+          const hasChanges =
+            incoming.length !== prev.length ||
+            incoming.some((t: Transaction) => {
+              const old = prev.find(p => p.id === t.id);
+              return !old || old.amount !== t.amount || old.status !== t.status || old.category !== t.category;
+            }) ||
+            prev.some(t => !nextIds.has(t.id));
+
+          return hasChanges ? incoming : prev;
+        });
+      } catch {
+        // Молча игнорируем — нет сети и т.п.
+      }
+    };
+
+    const interval = setInterval(poll, POLL_INTERVAL);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
