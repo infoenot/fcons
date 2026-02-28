@@ -5,7 +5,7 @@ import { useChat } from '../../context/ChatContext';
 import { 
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, 
   addMonths, subMonths, parseISO, isToday, startOfWeek, endOfWeek, 
-  isBefore, isSameDay, getDate, getDay
+  isBefore, isAfter, isSameDay, getDate, getDay
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -105,6 +105,7 @@ export default function CalendarScreen() {
     if (isSameDay(tDate, date)) return true;
     if (t.recurrence === 'NONE') return false;
     if (isBefore(date, tDate)) return false;
+    if (t.recurrenceEndDate && isAfter(date, parseISO(t.recurrenceEndDate))) return false;
     if (t.recurrence === 'DAILY') return true;
     if (t.recurrence === 'WEEKLY') return getDay(tDate) === getDay(date);
     if (t.recurrence === 'MONTHLY') return getDate(tDate) === getDate(date);
