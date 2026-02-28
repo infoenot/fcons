@@ -134,16 +134,16 @@ export default function CalendarScreen() {
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  const getCategoryCount = (catName: string) => {
+  const getCategoryCount = (catName: string, catType: TransactionType) => {
     return monthTransactions.filter(t =>
-      t.category.trim().toLowerCase() === catName.trim().toLowerCase()
+      t.category.trim().toLowerCase() === catName.trim().toLowerCase() && t.type === catType
     ).length;
   };
 
-  const getCategoryTotal = (catName: string) => {
+  const getCategoryTotal = (catName: string, catType: TransactionType) => {
     let total = 0;
     monthTransactions.forEach(t => {
-        if (t.category.trim().toLowerCase() === catName.trim().toLowerCase() && t.includeInBalance) {
+        if (t.category.trim().toLowerCase() === catName.trim().toLowerCase() && t.type === catType && t.includeInBalance) {
           total += t.amount;
         }
     });
@@ -332,7 +332,7 @@ export default function CalendarScreen() {
             {activeView === 'categories' ? (
                  <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
                     {incomeCategories.map(cat => {
-                        const total = getCategoryTotal(cat.name);
+                        const total = getCategoryTotal(cat.name, cat.type);
                         return (
                             <div 
                                 key={cat.id} 
@@ -341,7 +341,7 @@ export default function CalendarScreen() {
                             >
                                 <div className="flex justify-between items-start">
                                     <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
-                                    {getCategoryCount(cat.name) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name)}</span>}
+                                    {getCategoryCount(cat.name, cat.type) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name, cat.type)}</span>}
                                 </div>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
                                     {total > 0 ? '+' : ''}{total.toLocaleString('ru-RU')} ₽
@@ -350,7 +350,7 @@ export default function CalendarScreen() {
                         );
                     })}
                     {expenseCategories.map(cat => {
-                        const total = getCategoryTotal(cat.name);
+                        const total = getCategoryTotal(cat.name, cat.type);
                         return (
                             <div 
                                 key={cat.id} 
@@ -359,7 +359,7 @@ export default function CalendarScreen() {
                             >
                                 <div className="flex justify-between items-start">
                                     <span className="text-fin-textTert text-xs font-medium truncate">{cat.name}</span>
-                                    {getCategoryCount(cat.name) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name)}</span>}
+                                    {getCategoryCount(cat.name, cat.type) > 0 && <span className="text-fin-textTert text-xs">{getCategoryCount(cat.name, cat.type)}</span>}
                                 </div>
                                 <span className={`text-xl font-medium tracking-tight truncate ${total > 0 ? 'text-fin-text' : 'text-fin-textTert'}`}>
                                     {total > 0 ? '-' : ''}{total.toLocaleString('ru-RU')} ₽
