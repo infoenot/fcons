@@ -258,7 +258,7 @@ export default function CalendarScreen() {
                             : isCashGap && hasTx
                             ? 'bg-fin-bgSec text-fin-error border-fin-border hover:brightness-110'
                             : isCashGap && !hasTx
-                            ? 'bg-transparent text-fin-error border-dashed border-fin-error/40'
+                            ? 'bg-transparent text-fin-error border-transparent'
                             : hasTx
                                 ? 'bg-fin-bgSec text-fin-text border-fin-border hover:brightness-105'
                                 : 'bg-transparent text-fin-textTert border-transparent'}
@@ -278,7 +278,7 @@ export default function CalendarScreen() {
         <div className="px-1 mb-6">
             <div className="flex items-center justify-between mb-[38px] px-2">
                 {/* Segmented Control */}
-                <div className="flex bg-fin-bgSec p-1 rounded-full w-auto border border-fin-border">
+                <div className="flex bg-transparent p-1 rounded-full w-auto border border-fin-border">
                     <button 
                         onClick={() => setActiveView('categories')} 
                         className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
