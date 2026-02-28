@@ -35,7 +35,10 @@ router.get("/spaces/my", validateTelegramAuth, async (req, res) => {
       return res.json({ space, role: "owner" });
     }
 
-    const membership = user.spaces[0];
+    // Приоритет: если есть space где пользователь НЕ owner (т.е. вступил по инвайту) —
+    // возвращаем его первым. Это решает проблему когда у пользователя есть и свой space и совместный.
+    const joinedSpace = user.spaces.find(m => m.role !== "owner");
+    const membership = joinedSpace || user.spaces[0];
     res.json({ space: membership.space, role: membership.role });
   } catch (e) {
     console.error(e);
