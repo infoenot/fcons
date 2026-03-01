@@ -303,33 +303,9 @@ const TransactionModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Дата */}
-        <div className="mb-3">
-
-          {/* Дата — строка как Повторение */}
-          <button
-            onClick={() => setShowDateSheet(true)}
-            className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-3.5 flex justify-between items-center hover:border-fin-accent transition-colors"
-          >
-            <span className="text-sm font-medium text-fin-text">Дата</span>
-            <div className="flex items-center gap-1 text-fin-textSec">
-              <span className="text-sm">{customDateLabel || (activeDraft.date === today ? 'Сегодня' : activeDraft.date === yesterday ? 'Вчера' : activeDraft.date === tomorrow ? 'Завтра' : activeDraft.date)}</span>
-              <ChevronRight size={15} />
-            </div>
-          </button>
-          {/* Скрытый date picker для кастомной даты */}
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={activeDraft.date || ''}
-            onChange={e => { updateDraft('date', e.target.value); setShowDateSheet(false); }}
-            className="sr-only"
-          />
-        </div>
-
         {/* Статус + В балансе */}
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2.5">
+        <div className="flex gap-3 mb-2">
+          <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2">
             <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">Статус</p>
             <div className="flex bg-fin-bg rounded-full p-0.5 border border-fin-border">
               <button
@@ -346,7 +322,7 @@ const TransactionModal: React.FC = () => {
               >План</button>
             </div>
           </div>
-          <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2.5">
+          <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2">
             <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">В балансе</p>
             <div className="flex items-center justify-between mt-1.5">
               <span className="text-xs text-fin-textSec">{activeDraft.includeInBalance ? 'Да' : 'Нет'}</span>
@@ -383,7 +359,7 @@ const TransactionModal: React.FC = () => {
         <div className="mb-3">
           <button
             onClick={() => setShowRecurrenceSheet(true)}
-            className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-3.5 flex justify-between items-center hover:border-fin-accent transition-colors"
+            className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-2.5 flex justify-between items-center hover:border-fin-accent transition-colors"
           >
             <span className="text-sm font-medium text-fin-text">Повторение</span>
             <div className="flex items-center gap-1 text-fin-textSec">

@@ -151,9 +151,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
                                     <span className="text-xs text-fin-textTert">
                                         {format(parseISO(tx.date), 'd MMM, eee', { locale: ru }).replace(/\./g, '')}
                                     </span>
-                                    {tx.status === 'PLANNED'
-                                        ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-bgSec text-fin-textTert border border-fin-border">П</span>
-                                        : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-success/10 text-fin-success border border-fin-success/20">Ф</span>}
+                                    {tx.status === 'PLANNED' ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-fin-border text-fin-textTert >План</span> : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-fin-border text-fin-textTert >Факт</span>}
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button onClick={() => startEdit(tx)} className="p-1.5 text-fin-textTert hover:text-fin-accent rounded-lg transition-colors">
