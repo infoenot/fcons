@@ -184,12 +184,9 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-end pt-2 border-t border-fin-border/30 mt-1">
-                      <button
-                        onClick={() => handleConfirm(t)}
-                        className="flex-1 py-2 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95"
-                      >
-                        <Check size={14} strokeWidth={2.5} /> <span className="text-xs font-bold">Подтвердить</span>
+                    <div className="flex justify-end gap-1 mt-1">
+                      <button onClick={() => handleConfirm(t)} className="p-1.5 text-fin-textTert hover:text-fin-success rounded-lg transition-colors" title="Подтвердить">
+                        <Check size={13} />
                       </button>
                     </div>
                   </div>
