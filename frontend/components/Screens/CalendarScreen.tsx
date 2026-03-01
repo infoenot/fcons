@@ -127,7 +127,7 @@ export default function CalendarScreen() {
         });
     });
     
-    return txs.sort((a, b) => parseISO(b.displayDate).getTime() - parseISO(a.displayDate).getTime());
+    return txs.sort((a, b) => parseISO(a.displayDate).getTime() - parseISO(b.displayDate).getTime());
   }, [getTransactionsForDate, monthStart, monthEnd]);
 
 

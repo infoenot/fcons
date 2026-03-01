@@ -127,42 +127,55 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
                       </div>
                   ) : (
                       // VIEW MODE
-                      <>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                {spaceMembers.length > 1 && tx.addedBy ? (
-                                    tx.addedBy.avatar ? (
-                                        <img src={tx.addedBy.avatar} alt={tx.addedBy.name} title={tx.addedBy.name} className="w-8 h-8 rounded-full object-cover border border-fin-border shrink-0" />
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs shrink-0" title={tx.addedBy.name}>
-                                            {tx.addedBy.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className={`w-1 h-8 rounded-full ${tx.type === 'INCOME' ? 'bg-fin-success' : 'bg-fin-textSec'}`}></div>
-                                )}
-                                <div>
-                                    <div className="font-bold text-fin-text text-sm">{tx.category}</div>
-                                    <div className="text-[10px] text-fin-textTert font-medium uppercase tracking-wider">
-                                        {format(parseISO(tx.date), 'd MMM', { locale: ru })} • План
-                                    </div>
+                      <div className="flex items-center">
+                        {/* Аватар автора */}
+                        {spaceMembers.length > 1 && tx.addedBy ? (
+                            tx.addedBy.avatar ? (
+                                <img src={tx.addedBy.avatar} alt={tx.addedBy.name} title={tx.addedBy.name} className="w-8 h-8 rounded-full object-cover border border-fin-border shrink-0 mr-3" />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs shrink-0 mr-3" title={tx.addedBy.name}>
+                                    {tx.addedBy.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
+                                </div>
+                            )
+                        ) : null}
+                        {/* Основное содержимое */}
+                        <div className="flex-1 flex flex-col gap-2">
+                            <div className="flex justify-between items-start">
+                                <span className="font-semibold text-fin-text text-base truncate">{tx.category}</span>
+                                <span className={`font-medium text-base whitespace-nowrap ${tx.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                    {tx.type === 'INCOME' ? '+' : '-'}{tx.amount.toLocaleString('ru-RU')} ₽
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-fin-textTert">
+                                    {format(parseISO(tx.date), 'd MMM, eee', { locale: ru }).replace(/\./g, '')}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    {/* Компактные кнопки действий */}
+                                    <button
+                                        onClick={() => startEdit(tx)}
+                                        className="p-1.5 text-fin-textTert hover:text-fin-accent hover:bg-fin-accent/10 rounded-lg transition-colors"
+                                        title="Редактировать"
+                                    >
+                                        <Edit2 size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(tx.id)}
+                                        className="p-1.5 text-fin-textTert hover:text-fin-error hover:bg-fin-error/10 rounded-lg transition-colors"
+                                        title="Удалить"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleConfirm(tx.id)}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 bg-fin-success/10 border border-fin-success/30 text-fin-success rounded-lg text-xs font-bold hover:bg-fin-success/20 transition-all active:scale-95"
+                                    >
+                                        <Check size={11} strokeWidth={2.5} /> Факт
+                                    </button>
                                 </div>
                             </div>
-                            <div className="font-mono font-bold text-fin-text">{tx.amount.toLocaleString()} ₽</div>
                         </div>
-
-                        <div className="flex items-center gap-2 pt-2 border-t border-fin-border/30">
-                            <button onClick={() => handleConfirm(tx.id)} className="flex-1 py-2 bg-fin-success/10 border border-fin-success/20 text-fin-success rounded-lg flex items-center justify-center gap-1.5 hover:bg-fin-success/20 transition-all active:scale-95">
-                                <Check size={14} strokeWidth={2.5} /> <span className="text-xs font-bold">Подтвердить</span>
-                            </button>
-                            <button onClick={() => startEdit(tx)} className="p-2 text-fin-textSec hover:text-fin-accent hover:bg-fin-accent/10 rounded-lg transition-colors border border-transparent hover:border-fin-accent/20">
-                                <Edit2 size={16} />
-                            </button>
-                            <button onClick={() => handleDelete(tx.id)} className="p-2 text-fin-textSec hover:text-fin-error hover:bg-fin-error/10 rounded-lg transition-colors border border-transparent hover:border-fin-error/20">
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                      </>
+                      </div>
                   )}
                </div>
              ))}
