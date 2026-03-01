@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFinance } from '../../context/FinanceContext';
 import { useChat } from '../../context/ChatContext';
@@ -29,8 +29,11 @@ const TransactionModal: React.FC = () => {
   const [amountStr, setAmountStr] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecurrenceSheet, setShowRecurrenceSheet] = useState(false);
+  const [showDateSheet, setShowDateSheet] = useState(false);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,16 +76,57 @@ const TransactionModal: React.FC = () => {
       updateDraft('amount', next ? parseFloat(next) : undefined);
       return;
     }
-    if (key === '.' && amountStr.includes('.')) return;
-    if (amountStr === '0' && key !== '.') {
-      setAmountStr(key);
-      updateDraft('amount', parseFloat(key));
+    if (key === '=') {
+      try {
+        // Вычисляем выражение: заменяем % на /100*
+        const expr = amountStr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+        // eslint-disable-next-line no-new-func
+        const result = Function('"use strict"; return (' + expr + ')')();
+        if (!isNaN(result) && isFinite(result)) {
+          const rounded = Math.round(result * 100) / 100;
+          const str = String(rounded);
+          setAmountStr(str);
+          updateDraft('amount', rounded);
+        }
+      } catch {}
       return;
     }
-    if (amountStr.includes('.') && amountStr.split('.')[1]?.length >= 2) return;
+    const operators = ['+', '-', '*', '/'];
+    // Не давать ставить оператор в начале кроме минуса
+    if (operators.includes(key)) {
+      if (!amountStr) return;
+      // Заменить последний оператор если он уже стоит
+      const lastChar = amountStr.slice(-1);
+      if (operators.includes(lastChar)) {
+        const next = amountStr.slice(0, -1) + key;
+        setAmountStr(next);
+        return;
+      }
+      setAmountStr(amountStr + key);
+      return;
+    }
+    if (key === '%') {
+      if (!amountStr || ['+','-','*','/'].includes(amountStr.slice(-1))) return;
+      setAmountStr(amountStr + '%');
+      return;
+    }
+    // Точка — только одна в текущем числе (после последнего оператора)
+    const operators2 = ['+', '-', '*', '/'];
+    const lastOperatorIdx = Math.max(...operators2.map(op => amountStr.lastIndexOf(op)));
+    const currentNum = lastOperatorIdx >= 0 ? amountStr.slice(lastOperatorIdx + 1) : amountStr;
+    if (key === '.' && currentNum.includes('.')) return;
+    if (currentNum === '0' && key !== '.') {
+      const next = amountStr.slice(0, -1) + key;
+      setAmountStr(next);
+      const val = parseFloat(next);
+      if (!isNaN(val)) updateDraft('amount', val);
+      return;
+    }
+    if (currentNum.includes('.') && currentNum.split('.')[1]?.length >= 2) return;
     const next = amountStr + key;
     setAmountStr(next);
-    updateDraft('amount', parseFloat(next));
+    const val = parseFloat(next);
+    if (!isNaN(val)) updateDraft('amount', val);
   };
 
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -178,13 +222,9 @@ const TransactionModal: React.FC = () => {
     <div className="fixed inset-0 z-[100] bg-fin-bg flex flex-col animate-in slide-in-from-bottom-full duration-300">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between px-5 pt-[50px] pb-3 shrink-0">
-        <button
-          onClick={closeTransactionModal}
-          className="w-9 h-9 flex items-center justify-center bg-fin-bgSec border border-fin-border rounded-full text-fin-textSec hover:text-fin-text transition-colors active:scale-95"
-        >
-          <X size={17} />
-        </button>
+      <div className="flex items-center justify-between px-5 pt-[70px] pb-3 shrink-0">
+        {/* Пустой placeholder — Telegram показывает свой крестик */}
+        <div className="w-9" />
 
         {/* Переключатель типа — по центру, цветной */}
         <div className="flex bg-fin-bgSec border border-fin-border rounded-full p-0.5 gap-0.5">
@@ -209,14 +249,16 @@ const TransactionModal: React.FC = () => {
       {/* SCROLLABLE BODY */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-5">
 
-        {/* Сумма — по левому краю */}
-        <div className="flex items-baseline gap-2 py-3">
-          <span className={`text-6xl font-bold tracking-tight transition-colors ${
-            isExpense ? 'text-fin-text' : 'text-fin-success'
-          } ${!amountStr ? 'opacity-20' : ''}`}>
+        {/* Сумма — по левому краю, шрифт уменьшается при длинном числе */}
+        <div className="flex items-baseline gap-2 py-3 overflow-hidden">
+          <span className={`font-bold tracking-tight transition-all ${
+            amountStr.length > 9 ? 'text-3xl' : amountStr.length > 6 ? 'text-5xl' : 'text-6xl'
+          } ${isExpense ? 'text-fin-text' : 'text-fin-success'} ${!amountStr ? 'opacity-20' : ''}`}>
             {amountStr || '0'}
           </span>
-          <span className="text-3xl text-fin-textTert font-light">₽</span>
+          <span className={`text-fin-textTert font-light transition-all ${
+            amountStr.length > 9 ? 'text-xl' : amountStr.length > 6 ? 'text-2xl' : 'text-3xl'
+          }`}>₽</span>
         </div>
 
         {/* Категории */}
@@ -262,28 +304,25 @@ const TransactionModal: React.FC = () => {
         {/* Дата */}
         <div className="mb-4">
 
-          {/* Только иконка выбора даты */}
-          <div className="flex items-center gap-3">
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border cursor-pointer active:scale-95 transition-all ${
-              customDateLabel ? 'bg-fin-accent text-white border-fin-accent' : 'bg-fin-bgSec border-fin-border text-fin-textSec hover:border-fin-accent'
-            }`}>
-              <span>📅</span>
-              <span>{customDateLabel || 'Выбрать дату'}</span>
-              <input type="date" value={activeDraft.date || ''} onChange={e => updateDraft('date', e.target.value)} className="sr-only" />
-            </label>
-            {/* Быстрые кнопки */}
-            {[{ label: 'Вчера', value: yesterday }, { label: 'Сегодня', value: today }, { label: 'Завтра', value: tomorrow }].map(btn => (
-              <button
-                key={btn.value}
-                onClick={() => updateDraft('date', btn.value)}
-                className={`px-3 py-2 rounded-full text-xs font-medium border transition-all active:scale-95 ${
-                  activeDraft.date === btn.value
-                    ? 'bg-fin-accent text-white border-fin-accent'
-                    : 'bg-fin-bgSec border-fin-border text-fin-textSec hover:border-fin-accent'
-                }`}
-              >{btn.label}</button>
-            ))}
-          </div>
+          {/* Дата — строка как Повторение */}
+          <button
+            onClick={() => setShowDateSheet(true)}
+            className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-3.5 flex justify-between items-center hover:border-fin-accent transition-colors"
+          >
+            <span className="text-sm font-medium text-fin-text">Дата</span>
+            <div className="flex items-center gap-1 text-fin-textSec">
+              <span className="text-sm">{customDateLabel || (activeDraft.date === today ? 'Сегодня' : activeDraft.date === yesterday ? 'Вчера' : activeDraft.date === tomorrow ? 'Завтра' : activeDraft.date)}</span>
+              <ChevronRight size={15} />
+            </div>
+          </button>
+          {/* Скрытый date picker для кастомной даты */}
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={activeDraft.date || ''}
+            onChange={e => { updateDraft('date', e.target.value); setShowDateSheet(false); }}
+            className="sr-only"
+          />
         </div>
 
         {/* Статус + В балансе */}
@@ -347,21 +386,37 @@ const TransactionModal: React.FC = () => {
           )}
         </div>
 
-        {/* Нампад */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          {['1','2','3','4','5','6','7','8','9','.','0','backspace'].map(key => (
+        {/* Нампад с операторами */}
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {[
+            '7','8','9','+',
+            '4','5','6','-',
+            '1','2','3','*',
+            '.','0','%','/',
+          ].map(key => (
             <button
               key={key}
               onClick={() => handleNumpad(key)}
               className={`py-3.5 rounded-2xl text-xl font-semibold transition-all active:scale-95 select-none ${
-                key === 'backspace'
-                  ? 'bg-fin-bgSec text-fin-error border border-fin-border'
+                ['+','-','*','/','%'].includes(key)
+                  ? 'bg-fin-bgSec text-fin-accent border border-fin-border'
                   : 'bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card'
               }`}
             >
-              {key === 'backspace' ? <Delete size={18} className="mx-auto" /> : key}
+              {key}
             </button>
           ))}
+        </div>
+        {/* Нижняя строка: = и backspace */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button
+            onClick={() => handleNumpad('=')}
+            className="py-3.5 rounded-2xl text-xl font-bold bg-fin-accent text-white transition-all active:scale-95 select-none"
+          >=</button>
+          <button
+            onClick={() => handleNumpad('backspace')}
+            className="py-3.5 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-error border border-fin-border transition-all active:scale-95 select-none"
+          ><Delete size={18} className="mx-auto" /></button>
         </div>
 
       </div>
@@ -391,6 +446,39 @@ const TransactionModal: React.FC = () => {
         </div>
       </div>
 
+      {/* SHEET: Дата */}
+      {showDateSheet && (
+        <div className="absolute inset-0 z-10 bg-black/60 flex items-end" onClick={() => setShowDateSheet(false)}>
+          <div className="w-full bg-fin-card rounded-t-3xl border-t border-fin-border p-4 pb-10 animate-in slide-in-from-bottom-4 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-fin-border rounded-full mx-auto mb-5" />
+            <h4 className="text-base font-bold text-fin-text mb-3 px-2">Дата</h4>
+            {[
+              { label: 'Вчера', value: yesterday },
+              { label: 'Сегодня', value: today },
+              { label: 'Завтра', value: tomorrow },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => { updateDraft('date', opt.value); setShowDateSheet(false); }}
+                className={`w-full text-left px-4 py-3.5 rounded-xl text-sm font-medium transition-all mb-1 flex items-center justify-between ${
+                  activeDraft.date === opt.value ? 'bg-fin-accent/10 text-fin-accent' : 'text-fin-text hover:bg-fin-bgSec'
+                }`}
+              >
+                {opt.label}
+                {activeDraft.date === opt.value && <Check size={15} />}
+              </button>
+            ))}
+            <button
+              onClick={() => { setShowDateSheet(false); setTimeout(() => dateInputRef.current?.showPicker?.(), 100); }}
+              className="w-full text-left px-4 py-3.5 rounded-xl text-sm font-medium text-fin-text hover:bg-fin-bgSec transition-all flex items-center justify-between"
+            >
+              <span>Выбрать дату...</span>
+              {customDateLabel && <span className="text-fin-accent text-sm">{customDateLabel}</span>}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SHEET: Повторение */}
       {showRecurrenceSheet && (
         <div className="absolute inset-0 z-10 bg-black/60 flex items-end" onClick={() => setShowRecurrenceSheet(false)}>
@@ -413,9 +501,9 @@ const TransactionModal: React.FC = () => {
         </div>
       )}
 
-      {/* CONFIRM DELETE */}
+      {/* CONFIRM DELETE — полный непрозрачный overlay */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 z-20 bg-fin-bg/95 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
+        <div className="absolute inset-0 z-20 bg-fin-bg flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
           <div className="w-16 h-16 bg-fin-error/10 text-fin-error rounded-full flex items-center justify-center mb-4">
             <AlertTriangle size={32} />
           </div>

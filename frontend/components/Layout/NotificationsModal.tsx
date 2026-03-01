@@ -94,7 +94,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
              )}
              
              {pendingConfirmations.map(tx => (
-               <div key={tx.id} className="bg-fin-bg rounded-xl p-3 border border-fin-border/50 flex flex-col gap-3 shadow-sm">
+               <div key={tx.id} className="bg-fin-bg rounded-xl px-3 py-2.5 flex flex-col gap-2">
                   {editingId === tx.id ? (
                       // EDIT MODE
                       <div className="flex flex-col gap-2.5">
@@ -126,51 +126,39 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ onClose }) => {
                           </div>
                       </div>
                   ) : (
-                      // VIEW MODE
-                      <div className="flex items-center">
+                      // VIEW MODE — стандартный вид как везде
+                      <div className="flex items-center gap-3">
                         {/* Аватар автора */}
                         {spaceMembers.length > 1 && tx.addedBy ? (
                             tx.addedBy.avatar ? (
-                                <img src={tx.addedBy.avatar} alt={tx.addedBy.name} title={tx.addedBy.name} className="w-8 h-8 rounded-full object-cover border border-fin-border shrink-0 mr-3" />
+                                <img src={tx.addedBy.avatar} alt={tx.addedBy.name} title={tx.addedBy.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-fin-bgSec border border-fin-border flex items-center justify-center text-fin-accent font-bold text-xs shrink-0 mr-3" title={tx.addedBy.name}>
+                                <div className="w-8 h-8 rounded-full bg-fin-bgSec flex items-center justify-center text-fin-accent font-bold text-xs shrink-0" title={tx.addedBy.name}>
                                     {tx.addedBy.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
                                 </div>
                             )
                         ) : null}
-                        {/* Основное содержимое */}
-                        <div className="flex-1 flex flex-col gap-2">
-                            <div className="flex justify-between items-start">
+                        {/* Содержимое */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline">
                                 <span className="font-semibold text-fin-text text-base truncate">{tx.category}</span>
-                                <span className={`font-medium text-base whitespace-nowrap ${tx.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
+                                <span className={`font-medium text-base whitespace-nowrap ml-2 ${tx.type === 'INCOME' ? 'text-fin-success' : 'text-fin-text'}`}>
                                     {tx.type === 'INCOME' ? '+' : '-'}{tx.amount.toLocaleString('ru-RU')} ₽
                                 </span>
                             </div>
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center mt-0.5">
                                 <span className="text-xs text-fin-textTert">
                                     {format(parseISO(tx.date), 'd MMM, eee', { locale: ru }).replace(/\./g, '')}
                                 </span>
-                                <div className="flex items-center gap-1.5">
-                                    {/* Компактные кнопки действий */}
-                                    <button
-                                        onClick={() => startEdit(tx)}
-                                        className="p-1.5 text-fin-textTert hover:text-fin-accent hover:bg-fin-accent/10 rounded-lg transition-colors"
-                                        title="Редактировать"
-                                    >
+                                <div className="flex items-center gap-1">
+                                    <button onClick={() => startEdit(tx)} className="p-1.5 text-fin-textTert hover:text-fin-accent rounded-lg transition-colors">
                                         <Edit2 size={13} />
                                     </button>
-                                    <button
-                                        onClick={() => handleDelete(tx.id)}
-                                        className="p-1.5 text-fin-textTert hover:text-fin-error hover:bg-fin-error/10 rounded-lg transition-colors"
-                                        title="Удалить"
-                                    >
-                                        <Trash2 size={13} />
+                                    <button onClick={() => handleConfirm(tx.id)} className="p-1.5 text-fin-textTert hover:text-fin-success rounded-lg transition-colors" title="Подтвердить">
+                                        <Check size={13} />
                                     </button>
-                                    <button
-                                        onClick={() => handleConfirm(tx.id)}
-                                        className="flex items-center gap-1 px-2.5 py-1.5 bg-fin-success/10 border border-fin-success/30 text-fin-success rounded-lg text-xs font-bold hover:bg-fin-success/20 transition-all active:scale-95"
-                                    >
-                                        <Check size={11} strokeWidth={2.5} /> Факт
+                                    <button onClick={() => handleDelete(tx.id)} className="p-1.5 text-fin-textTert hover:text-fin-error rounded-lg transition-colors">
+                                        <Trash2 size={13} />
                                     </button>
                                 </div>
                             </div>
