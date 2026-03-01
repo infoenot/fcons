@@ -274,7 +274,7 @@ const TransactionModal: React.FC = () => {
                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
                   activeDraft.category === cat.name
                     ? 'bg-fin-card text-fin-text border-fin-border'
-                    : 'bg-fin-bgSec border-fin-border text-fin-text hover:border-fin-accent'
+                    : 'border-fin-border text-fin-textSec'
                 }`}
               >{cat.name}</button>
             ))}
@@ -304,7 +304,7 @@ const TransactionModal: React.FC = () => {
         </div>
 
         {/* Статус + В балансе */}
-        <div className="flex gap-3 mb-2">
+        <div className="flex gap-3 mb-3">
           <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2">
             <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">Статус</p>
             <div className="flex bg-fin-bg rounded-full p-0.5 border border-fin-border">
@@ -383,18 +383,18 @@ const TransactionModal: React.FC = () => {
         <div className="grid grid-cols-4 gap-1.5 mb-3">
           {/* Строка 1: AC ⌫ / * */}
           <button onClick={() => { setAmountStr(''); updateDraft('amount', undefined); }} className="py-3 rounded-2xl text-sm font-bold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">AC</button>
-          <button onClick={() => handleNumpad('backspace')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-error border border-fin-border active:scale-95 select-none flex items-center justify-center"><Delete size={17} /></button>
-          <button onClick={() => handleNumpad('/')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">/</button>
-          <button onClick={() => handleNumpad('*')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">×</button>
+          <button onClick={() => handleNumpad('backspace')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none flex items-center justify-center"><Delete size={17} /></button>
+          <button onClick={() => handleNumpad('/')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">/</button>
+          <button onClick={() => handleNumpad('*')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">×</button>
           {/* Строка 2: 7 8 9 - */}
           {['7','8','9'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
-          <button onClick={() => handleNumpad('-')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">−</button>
+          <button onClick={() => handleNumpad('-')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">−</button>
           {/* Строка 3: 4 5 6 + */}
           {['4','5','6'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
-          <button onClick={() => handleNumpad('+')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">+</button>
+          <button onClick={() => handleNumpad('+')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">+</button>
           {/* Строка 4: 1 2 3 + (продолжение) */}
           {['1','2','3'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
-          <button onClick={() => handleNumpad('%')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">%</button>
+          <button onClick={() => handleNumpad('%')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">%</button>
           {/* Строка 5: 0 . = */}
           <button onClick={() => handleNumpad('0')} className="col-span-2 py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none text-left pl-6">0</button>
           <button onClick={() => handleNumpad('.')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">.</button>
