@@ -178,7 +178,7 @@ const TransactionModal: React.FC = () => {
     <div className="fixed inset-0 z-[100] bg-fin-bg flex flex-col animate-in slide-in-from-bottom-full duration-300">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+      <div className="flex items-center justify-between px-5 pt-[50px] pb-3 shrink-0">
         <button
           onClick={closeTransactionModal}
           className="w-9 h-9 flex items-center justify-center bg-fin-bgSec border border-fin-border rounded-full text-fin-textSec hover:text-fin-text transition-colors active:scale-95"
@@ -202,23 +202,15 @@ const TransactionModal: React.FC = () => {
           >Доход</button>
         </div>
 
-        {mode === 'EDIT' ? (
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="w-9 h-9 flex items-center justify-center bg-fin-error/10 border border-fin-error/30 rounded-full text-fin-error hover:bg-fin-error/20 transition-colors active:scale-95"
-          >
-            <Trash2 size={15} />
-          </button>
-        ) : (
-          <div className="w-9" />
-        )}
+        {/* Placeholder для симметрии */}
+        <div className="w-9" />
       </div>
 
       {/* SCROLLABLE BODY */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-5">
 
-        {/* Сумма */}
-        <div className="flex items-baseline justify-center gap-2 py-3">
+        {/* Сумма — по левому краю */}
+        <div className="flex items-baseline gap-2 py-3">
           <span className={`text-6xl font-bold tracking-tight transition-colors ${
             isExpense ? 'text-fin-text' : 'text-fin-success'
           } ${!amountStr ? 'opacity-20' : ''}`}>
@@ -229,7 +221,7 @@ const TransactionModal: React.FC = () => {
 
         {/* Категории */}
         <div className="mb-4">
-          <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">Категория</p>
+
           <div className="flex flex-wrap gap-2">
             {filteredCategories.map(cat => (
               <button
@@ -269,25 +261,28 @@ const TransactionModal: React.FC = () => {
 
         {/* Дата */}
         <div className="mb-4">
-          <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">Дата</p>
-          <div className="flex gap-2">
+
+          {/* Только иконка выбора даты */}
+          <div className="flex items-center gap-3">
+            <label className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border cursor-pointer active:scale-95 transition-all ${
+              customDateLabel ? 'bg-fin-accent text-white border-fin-accent' : 'bg-fin-bgSec border-fin-border text-fin-textSec hover:border-fin-accent'
+            }`}>
+              <span>📅</span>
+              <span>{customDateLabel || 'Выбрать дату'}</span>
+              <input type="date" value={activeDraft.date || ''} onChange={e => updateDraft('date', e.target.value)} className="sr-only" />
+            </label>
+            {/* Быстрые кнопки */}
             {[{ label: 'Вчера', value: yesterday }, { label: 'Сегодня', value: today }, { label: 'Завтра', value: tomorrow }].map(btn => (
               <button
                 key={btn.value}
                 onClick={() => updateDraft('date', btn.value)}
-                className={`flex-1 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
+                className={`px-3 py-2 rounded-full text-xs font-medium border transition-all active:scale-95 ${
                   activeDraft.date === btn.value
                     ? 'bg-fin-accent text-white border-fin-accent'
-                    : 'bg-fin-bgSec border-fin-border text-fin-text hover:border-fin-accent'
+                    : 'bg-fin-bgSec border-fin-border text-fin-textSec hover:border-fin-accent'
                 }`}
               >{btn.label}</button>
             ))}
-            <label className={`px-3 py-2 rounded-full text-sm font-medium border cursor-pointer active:scale-95 transition-all ${
-              customDateLabel ? 'bg-fin-accent text-white border-fin-accent' : 'bg-fin-bgSec border-fin-border text-fin-textSec hover:border-fin-accent'
-            }`}>
-              {customDateLabel || '📅'}
-              <input type="date" value={activeDraft.date || ''} onChange={e => updateDraft('date', e.target.value)} className="sr-only" />
-            </label>
           </div>
         </div>
 
@@ -371,19 +366,29 @@ const TransactionModal: React.FC = () => {
 
       </div>
 
-      {/* ФИКСИРОВАННАЯ КНОПКА СОХРАНЕНИЯ */}
-      <div className="shrink-0 px-5 pt-3 pb-6 bg-fin-bg border-t border-fin-border/40">
-        <button
-          onClick={handleSave}
-          disabled={!isValid}
-          className={`w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-[0.98] ${
-            isValid
-              ? 'bg-fin-accent text-white hover:brightness-110'
-              : 'bg-fin-bgSec text-fin-textTert border border-fin-border cursor-not-allowed'
-          }`}
-        >
-          {mode === 'EDIT' ? 'Сохранить' : 'Добавить'}
-        </button>
+      {/* ФИКСИРОВАННАЯ ЗОНА ДЕЙСТВИЙ — без разделителя */}
+      <div className="shrink-0 px-5 pt-3 pb-6 bg-fin-bg">
+        <div className="flex gap-3">
+          <button
+            onClick={handleSave}
+            disabled={!isValid}
+            className={`flex-1 py-4 rounded-2xl font-bold text-base transition-all active:scale-[0.98] ${
+              isValid
+                ? 'bg-fin-accent text-white hover:brightness-110'
+                : 'bg-fin-bgSec text-fin-textTert cursor-not-allowed'
+            }`}
+          >
+            {mode === 'EDIT' ? 'Сохранить' : 'Добавить'}
+          </button>
+          {mode === 'EDIT' && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-14 flex items-center justify-center bg-fin-error/10 rounded-2xl text-fin-error hover:bg-fin-error/20 transition-colors active:scale-95"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* SHEET: Повторение */}
