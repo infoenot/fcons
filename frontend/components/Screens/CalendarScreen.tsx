@@ -284,23 +284,27 @@ export default function CalendarScreen() {
         <div className="mb-6">
             <div className="flex items-center justify-between mb-[38px]">
                 {/* Segmented Control */}
-                <div className="flex bg-transparent p-1 rounded-full w-auto border border-fin-border">
-                    <button 
-                        onClick={() => setActiveView('categories')} 
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                            activeView === 'categories' 
-                                ? 'bg-fin-card text-fin-text shadow-sm border border-fin-border' 
-                                : 'text-fin-textSec hover:text-fin-text'
+                <div className="relative flex bg-transparent p-1 rounded-full w-auto border border-fin-border">
+                    {/* Sliding pill */}
+                    <div
+                        className="absolute top-1 bottom-1 rounded-full bg-fin-card border border-fin-border transition-all duration-300 ease-in-out"
+                        style={{
+                            width: 'calc(50% - 2px)',
+                            left: activeView === 'categories' ? '4px' : 'calc(50% - 2px)',
+                        }}
+                    />
+                    <button
+                        onClick={() => setActiveView('categories')}
+                        className={`relative z-10 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
+                            activeView === 'categories' ? 'text-fin-text' : 'text-fin-textSec'
                         }`}
                     >
                         Категории
                     </button>
-                    <button 
-                        onClick={() => setActiveView('transactions')} 
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                            activeView === 'transactions' 
-                                ? 'bg-fin-card text-fin-text shadow-sm border border-fin-border' 
-                                : 'text-fin-textSec hover:text-fin-text'
+                    <button
+                        onClick={() => setActiveView('transactions')}
+                        className={`relative z-10 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 ${
+                            activeView === 'transactions' ? 'text-fin-text' : 'text-fin-textSec'
                         }`}
                     >
                         Транзакции

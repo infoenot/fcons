@@ -228,18 +228,22 @@ const TransactionModal: React.FC = () => {
           className="text-fin-textSec text-sm font-medium hover:text-fin-text transition-colors active:scale-95 px-1"
         >Отмена</button>
 
-        {/* Переключатель типа — по центру, цветной */}
-        <div className="flex bg-fin-bgSec border border-fin-border rounded-full p-0.5 gap-0.5">
+        {/* Переключатель типа — sliding pill */}
+        <div className="relative flex bg-fin-bgSec border border-fin-border rounded-full p-0.5">
+          <div
+            className="absolute top-0.5 bottom-0.5 rounded-full bg-fin-card border border-fin-border transition-all duration-300 ease-in-out"
+            style={{ width: 'calc(50% - 2px)', left: isExpense ? '2px' : 'calc(50%)' }}
+          />
           <button
             onClick={() => { updateDraft('type', 'EXPENSE'); updateDraft('category', ''); }}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${
-              isExpense ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textSec hover:text-fin-text'
+            className={`relative z-10 px-5 py-2 rounded-full text-sm font-bold transition-colors duration-200 ${
+              isExpense ? 'text-fin-text' : 'text-fin-textSec'
             }`}
           >Расход</button>
           <button
             onClick={() => { updateDraft('type', 'INCOME'); updateDraft('category', ''); }}
-            className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${
-              !isExpense ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textSec hover:text-fin-text'
+            className={`relative z-10 px-5 py-2 rounded-full text-sm font-bold transition-colors duration-200 ${
+              !isExpense ? 'text-fin-text' : 'text-fin-textSec'
             }`}
           >Доход</button>
         </div>
@@ -307,17 +311,21 @@ const TransactionModal: React.FC = () => {
         <div className="flex gap-3 mb-3">
           <div className="flex-1 bg-fin-bgSec border border-fin-border rounded-2xl px-3 py-2">
             <p className="text-[10px] font-bold text-fin-textTert uppercase tracking-widest mb-2">Статус</p>
-            <div className="flex bg-fin-bg rounded-full p-0.5 border border-fin-border">
+            <div className="relative flex bg-fin-bg rounded-full p-0.5 border border-fin-border">
+              <div
+                className="absolute top-0.5 bottom-0.5 rounded-full bg-fin-card border border-fin-border transition-all duration-300 ease-in-out"
+                style={{ width: 'calc(50% - 2px)', left: activeDraft.status !== 'PLANNED' ? '2px' : 'calc(50%)' }}
+              />
               <button
                 onClick={() => updateDraft('status', 'ACTUAL')}
-                className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeDraft.status === 'ACTUAL' ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textTert'
+                className={`relative z-10 flex-1 py-1.5 rounded-full text-xs font-bold transition-colors duration-200 ${
+                  activeDraft.status !== 'PLANNED' ? 'text-fin-text' : 'text-fin-textTert'
                 }`}
               >Факт</button>
               <button
                 onClick={() => updateDraft('status', 'PLANNED')}
-                className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeDraft.status === 'PLANNED' ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textTert'
+                className={`relative z-10 flex-1 py-1.5 rounded-full text-xs font-bold transition-colors duration-200 ${
+                  activeDraft.status === 'PLANNED' ? 'text-fin-text' : 'text-fin-textTert'
                 }`}
               >План</button>
             </div>
