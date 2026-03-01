@@ -103,13 +103,49 @@ export default function ChatScreen() {
   // Краткая сводка транзакций для системного промпта
   const getBudgetSummary = () => {
     const today = new Date().toISOString().split('T')[0];
-    const thisMonth = today.slice(0, 7); // YYYY-MM
+    const thisMonth = today.slice(0, 7);
+    const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 7);
+
     const monthTx = transactions.filter(t => t.date.startsWith(thisMonth) && t.includeInBalance);
+    const lastMonthTx = transactions.filter(t => t.date.startsWith(lastMonth) && t.includeInBalance);
+
     const income = monthTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
     const expense = monthTx.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+    const lastIncome = lastMonthTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
+    const lastExpense = lastMonthTx.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
     const balance = transactions.filter(t => t.includeInBalance).reduce((s, t) => s + (t.type === 'INCOME' ? t.amount : -t.amount), 0);
     const planned = transactions.filter(t => t.status === 'PLANNED' && t.date >= today).length;
-    return `Баланс: ${balance.toLocaleString('ru-RU')} ₽. В этом месяце: доходы ${income.toLocaleString('ru-RU')} ₽, расходы ${expense.toLocaleString('ru-RU')} ₽. Плановых платежей впереди: ${planned}. Всего транзакций в базе: ${transactions.length}.`;
+
+    // Топ категорий расходов текущего месяца
+    const expenseByCategory: Record<string, number> = {};
+    monthTx.filter(t => t.type === 'EXPENSE' && t.status === 'ACTUAL').forEach(t => {
+      expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+    });
+    const topExpenses = Object.entries(expenseByCategory)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([cat, amt]) => `${cat}: ${amt.toLocaleString('ru-RU')} ₽`)
+      .join(', ');
+
+    // Все транзакции (последние 90 дней) для глубокого анализа
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysStr = ninetyDaysAgo.toISOString().split('T')[0];
+    const recentTx = transactions
+      .filter(t => t.date >= ninetyDaysStr && t.includeInBalance)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(t => `${t.date} | ${t.type === 'INCOME' ? '+' : '-'}${t.amount} ₽ | ${t.category} | ${t.status}${t.addedBy ? ' | ' + t.addedBy.name : ''}`)
+      .join('
+');
+
+    return `Баланс: ${balance.toLocaleString('ru-RU')} ₽
+Текущий месяц: доходы ${income.toLocaleString('ru-RU')} ₽, расходы ${expense.toLocaleString('ru-RU')} ₽
+Прошлый месяц: доходы ${lastIncome.toLocaleString('ru-RU')} ₽, расходы ${lastExpense.toLocaleString('ru-RU')} ₽
+Топ расходов этого месяца: ${topExpenses || 'нет данных'}
+Плановых платежей впереди: ${planned}
+
+ТРАНЗАКЦИИ ЗА ПОСЛЕДНИЕ 90 ДНЕЙ:
+${recentTx || 'нет данных'}`;
   };
 
   const scrollToBottom = () => {
