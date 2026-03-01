@@ -39,6 +39,65 @@ const AuthorAvatar: React.FC<{ addedBy?: Transaction['addedBy'] }> = ({ addedBy 
   );
 };
 
+// Свайп-карточка для уведомлений
+const SwipeCard: React.FC<{
+  onConfirm: () => void;
+  onDelete: () => void;
+  children: React.ReactNode;
+}> = ({ onConfirm, onDelete, children }) => {
+  const [offsetX, setOffsetX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const THRESHOLD = 80;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const diff = e.touches[0].clientX - startX.current;
+    setOffsetX(Math.max(-140, Math.min(140, diff)));
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (offsetX < -THRESHOLD) {
+      onConfirm();
+    } else if (offsetX > THRESHOLD) {
+      onDelete();
+    }
+    setOffsetX(0);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Фон подтверждения (слева виден при свайпе влево) */}
+      <div className="absolute inset-0 flex items-center justify-end pr-5 bg-fin-success/20 rounded-xl">
+        <Check size={26} className="text-fin-success" strokeWidth={2.5} />
+      </div>
+      {/* Фон удаления (справа виден при свайпе вправо) */}
+      <div className="absolute inset-0 flex items-center justify-start pl-5 bg-fin-error/20 rounded-xl">
+        <Trash2 size={26} className="text-fin-error" strokeWidth={2.5} />
+      </div>
+      {/* Карточка */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s ease',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+
 const TransactionListModal: React.FC<TransactionListModalProps> = ({
   isOpen,
   onClose,
@@ -75,6 +134,10 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
 
   const handleEdit = (t: Transaction) => {
     openTransactionModal('EDIT', t);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteTransaction(id);
   };
 
   const handleConfirm = (t: Transaction) => {
@@ -166,8 +229,12 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
             transactions.map(t => {
               if (mode === 'NOTIFICATIONS') {
                 return (
-                  <div key={t.id} className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex flex-col gap-3">
-                    <div onClick={() => handleEdit(t)} className="flex items-start gap-0 cursor-pointer">
+                  <SwipeCard
+                    key={t.id + "-swipe"}
+                    onConfirm={() => handleConfirm(t)}
+                    onDelete={() => handleDelete(t.id)}
+                  >
+                    <div key={t.id} className="bg-fin-bgSec border border-fin-border rounded-xl p-4 flex items-center gap-0 cursor-pointer" onClick={() => handleEdit(t)}>
                       {showAvatars && <AuthorAvatar addedBy={t.addedBy} />}
                       <div className="flex-1 flex flex-col gap-3">
                         <div className="flex justify-between items-start">
@@ -184,12 +251,7 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-end gap-1 mt-1">
-                      <button onClick={() => handleConfirm(t)} className="p-1.5 text-fin-textTert hover:text-fin-success rounded-lg transition-colors" title="Подтвердить">
-                        <Check size={13} />
-                      </button>
-                    </div>
-                  </div>
+                  </SwipeCard>
                 );
               }
 
