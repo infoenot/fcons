@@ -233,13 +233,13 @@ const TransactionModal: React.FC = () => {
           <button
             onClick={() => { updateDraft('type', 'EXPENSE'); updateDraft('category', ''); }}
             className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${
-              isExpense ? 'bg-fin-error text-white' : 'text-fin-textSec hover:text-fin-text'
+              isExpense ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textSec hover:text-fin-text'
             }`}
           >Расход</button>
           <button
             onClick={() => { updateDraft('type', 'INCOME'); updateDraft('category', ''); }}
             className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 active:scale-95 ${
-              !isExpense ? 'bg-fin-success text-white' : 'text-fin-textSec hover:text-fin-text'
+              !isExpense ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textSec hover:text-fin-text'
             }`}
           >Доход</button>
         </div>
@@ -273,7 +273,7 @@ const TransactionModal: React.FC = () => {
                 onClick={() => updateDraft('category', cat.name)}
                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
                   activeDraft.category === cat.name
-                    ? 'bg-fin-accent text-white border-fin-accent'
+                    ? 'bg-fin-card text-fin-text border-fin-border'
                     : 'bg-fin-bgSec border-fin-border text-fin-text hover:border-fin-accent'
                 }`}
               >{cat.name}</button>
@@ -311,13 +311,13 @@ const TransactionModal: React.FC = () => {
               <button
                 onClick={() => updateDraft('status', 'ACTUAL')}
                 className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeDraft.status === 'ACTUAL' ? 'bg-fin-accent text-white' : 'text-fin-textTert'
+                  activeDraft.status === 'ACTUAL' ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textTert'
                 }`}
               >Факт</button>
               <button
                 onClick={() => updateDraft('status', 'PLANNED')}
                 className={`flex-1 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeDraft.status === 'PLANNED' ? 'bg-fin-accent text-white' : 'text-fin-textTert'
+                  activeDraft.status === 'PLANNED' ? 'bg-fin-card text-fin-text border border-fin-border' : 'text-fin-textTert'
                 }`}
               >План</button>
             </div>
@@ -398,7 +398,7 @@ const TransactionModal: React.FC = () => {
           {/* Строка 5: 0 . = */}
           <button onClick={() => handleNumpad('0')} className="col-span-2 py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none text-left pl-6">0</button>
           <button onClick={() => handleNumpad('.')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">.</button>
-          <button onClick={() => handleNumpad('=')} className="py-3 rounded-2xl text-xl font-bold bg-fin-accent text-white active:scale-95 select-none">=</button>
+          <button onClick={() => handleNumpad('=')} className="py-3 rounded-2xl text-xl font-bold bg-fin-bgSec text-fin-text border border-fin-border active:scale-95 select-none">=</button>
         </div>
 
       </div>
