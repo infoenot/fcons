@@ -223,8 +223,10 @@ const TransactionModal: React.FC = () => {
 
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 pt-[70px] pb-3 shrink-0">
-        {/* Пустой placeholder — Telegram показывает свой крестик */}
-        <div className="w-9" />
+        <button
+          onClick={closeTransactionModal}
+          className="text-fin-textSec text-sm font-medium hover:text-fin-text transition-colors active:scale-95 px-1"
+        >Отмена</button>
 
         {/* Переключатель типа — по центру, цветной */}
         <div className="flex bg-fin-bgSec border border-fin-border rounded-full p-0.5 gap-0.5">
@@ -262,7 +264,7 @@ const TransactionModal: React.FC = () => {
         </div>
 
         {/* Категории */}
-        <div className="mb-4">
+        <div className="mb-3">
 
           <div className="flex flex-wrap gap-2">
             {filteredCategories.map(cat => (
@@ -302,7 +304,7 @@ const TransactionModal: React.FC = () => {
         </div>
 
         {/* Дата */}
-        <div className="mb-4">
+        <div className="mb-3">
 
           {/* Дата — строка как Повторение */}
           <button
@@ -362,8 +364,23 @@ const TransactionModal: React.FC = () => {
           </div>
         </div>
 
+        {/* Дата */}
+        <div className="mb-3">
+          <button
+            onClick={() => setShowDateSheet(true)}
+            className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-3 flex justify-between items-center hover:border-fin-accent transition-colors"
+          >
+            <span className="text-sm font-medium text-fin-text">Дата</span>
+            <div className="flex items-center gap-1 text-fin-textSec">
+              <span className="text-sm">{customDateLabel || (activeDraft.date === today ? 'Сегодня' : activeDraft.date === yesterday ? 'Вчера' : activeDraft.date === tomorrow ? 'Завтра' : activeDraft.date)}</span>
+              <ChevronRight size={15} />
+            </div>
+          </button>
+          <input ref={dateInputRef} type="date" value={activeDraft.date || ''} onChange={e => { updateDraft('date', e.target.value); setShowDateSheet(false); }} className="sr-only" />
+        </div>
+
         {/* Повторение */}
-        <div className="mb-4">
+        <div className="mb-3">
           <button
             onClick={() => setShowRecurrenceSheet(true)}
             className="w-full bg-fin-bgSec border border-fin-border rounded-2xl px-4 py-3.5 flex justify-between items-center hover:border-fin-accent transition-colors"
@@ -386,37 +403,26 @@ const TransactionModal: React.FC = () => {
           )}
         </div>
 
-        {/* Нампад с операторами */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          {[
-            '7','8','9','+',
-            '4','5','6','-',
-            '1','2','3','*',
-            '.','0','%','/',
-          ].map(key => (
-            <button
-              key={key}
-              onClick={() => handleNumpad(key)}
-              className={`py-3.5 rounded-2xl text-xl font-semibold transition-all active:scale-95 select-none ${
-                ['+','-','*','/','%'].includes(key)
-                  ? 'bg-fin-bgSec text-fin-accent border border-fin-border'
-                  : 'bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card'
-              }`}
-            >
-              {key}
-            </button>
-          ))}
-        </div>
-        {/* Нижняя строка: = и backspace */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <button
-            onClick={() => handleNumpad('=')}
-            className="py-3.5 rounded-2xl text-xl font-bold bg-fin-accent text-white transition-all active:scale-95 select-none"
-          >=</button>
-          <button
-            onClick={() => handleNumpad('backspace')}
-            className="py-3.5 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-error border border-fin-border transition-all active:scale-95 select-none"
-          ><Delete size={18} className="mx-auto" /></button>
+        {/* Нампад — layout iOS */}
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          {/* Строка 1: AC ⌫ / * */}
+          <button onClick={() => { setAmountStr(''); updateDraft('amount', undefined); }} className="py-3 rounded-2xl text-sm font-bold bg-fin-bgSec text-fin-textSec border border-fin-border active:scale-95 select-none">AC</button>
+          <button onClick={() => handleNumpad('backspace')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-error border border-fin-border active:scale-95 select-none flex items-center justify-center"><Delete size={17} /></button>
+          <button onClick={() => handleNumpad('/')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">/</button>
+          <button onClick={() => handleNumpad('*')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">×</button>
+          {/* Строка 2: 7 8 9 - */}
+          {['7','8','9'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
+          <button onClick={() => handleNumpad('-')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">−</button>
+          {/* Строка 3: 4 5 6 + */}
+          {['4','5','6'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
+          <button onClick={() => handleNumpad('+')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">+</button>
+          {/* Строка 4: 1 2 3 + (продолжение) */}
+          {['1','2','3'].map(k => <button key={k} onClick={() => handleNumpad(k)} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">{k}</button>)}
+          <button onClick={() => handleNumpad('%')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-accent border border-fin-border active:scale-95 select-none">%</button>
+          {/* Строка 5: 0 . = */}
+          <button onClick={() => handleNumpad('0')} className="col-span-2 py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none text-left pl-6">0</button>
+          <button onClick={() => handleNumpad('.')} className="py-3 rounded-2xl text-xl font-semibold bg-fin-bgSec text-fin-text border border-fin-border hover:bg-fin-card active:scale-95 select-none">.</button>
+          <button onClick={() => handleNumpad('=')} className="py-3 rounded-2xl text-xl font-bold bg-fin-accent text-white active:scale-95 select-none">=</button>
         </div>
 
       </div>
@@ -427,7 +433,7 @@ const TransactionModal: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={!isValid}
-            className={`flex-1 py-4 rounded-2xl font-bold text-base transition-all active:scale-[0.98] ${
+            className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] ${
               isValid
                 ? 'bg-fin-accent text-white hover:brightness-110'
                 : 'bg-fin-bgSec text-fin-textTert cursor-not-allowed'

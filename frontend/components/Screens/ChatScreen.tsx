@@ -9,6 +9,76 @@ import { ru } from 'date-fns/locale';
 import { Transaction } from '../../types';
 import BottomSheet from '../Shared/BottomSheet';
 
+// Простой рендерер markdown для сообщений ассистента
+const MarkdownMessage: React.FC<{ text: string }> = ({ text }) => {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let key = 0;
+
+  const parseInline = (line: string): React.ReactNode => {
+    // **жирный** → <strong>
+    const parts = line.split(/\*\*(.*?)\*\*/g);
+    if (parts.length === 1) return line;
+    return parts.map((part, i) =>
+      i % 2 === 1 ? <strong key={i} className="font-semibold text-fin-text">{part}</strong> : part
+    );
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      // Пустая строка — отступ между блоками
+      elements.push(<div key={key++} className="h-2" />);
+    } else if (line.startsWith('- ') || line.startsWith('• ')) {
+      // Маркированный список — собираем подряд идущие пункты
+      const items: string[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('• '))) {
+        items.push(lines[i].trim().replace(/^[-•]\s+/, ''));
+        i++;
+      }
+      elements.push(
+        <ul key={key++} className="space-y-1.5 my-1">
+          {items.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <span className="text-fin-accent mt-0.5 shrink-0">•</span>
+              <span>{parseInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    } else if (/^\d+\.\s/.test(line)) {
+      // Нумерованный список
+      const items: string[] = [];
+      let num = 1;
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^\d+\.\s+/, ''));
+        i++;
+        num++;
+      }
+      elements.push(
+        <ol key={key++} className="space-y-1.5 my-1">
+          {items.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <span className="text-fin-accent font-semibold shrink-0 min-w-[1rem]">{idx + 1}.</span>
+              <span>{parseInline(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    } else {
+      elements.push(<p key={key++} className="leading-snug">{parseInline(line)}</p>);
+    }
+    i++;
+  }
+
+  return <div className="text-sm space-y-0.5">{elements}</div>;
+};
+
+
 export default function ChatScreen() {
   const [input, setInput] = useState('');
   const { messages, setMessages } = useChat(); 
@@ -605,75 +675,6 @@ export default function ChatScreen() {
   );
 }
 
-// Простой рендерер markdown для сообщений ассистента
-const MarkdownMessage: React.FC<{ text: string }> = ({ text }) => {
-  const lines = text.split('\n');
-  const elements: React.ReactNode[] = [];
-  let key = 0;
-
-  const parseInline = (line: string): React.ReactNode => {
-    // **жирный** → <strong>
-    const parts = line.split(/\*\*(.*?)\*\*/g);
-    if (parts.length === 1) return line;
-    return parts.map((part, i) =>
-      i % 2 === 1 ? <strong key={i} className="font-semibold text-fin-text">{part}</strong> : part
-    );
-  };
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i].trim();
-
-    if (!line) {
-      // Пустая строка — отступ между блоками
-      elements.push(<div key={key++} className="h-2" />);
-    } else if (line.startsWith('- ') || line.startsWith('• ')) {
-      // Маркированный список — собираем подряд идущие пункты
-      const items: string[] = [];
-      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('• '))) {
-        items.push(lines[i].trim().replace(/^[-•]\s+/, ''));
-        i++;
-      }
-      elements.push(
-        <ul key={key++} className="space-y-1.5 my-1">
-          {items.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2">
-              <span className="text-fin-accent mt-0.5 shrink-0">•</span>
-              <span>{parseInline(item)}</span>
-            </li>
-          ))}
-        </ul>
-      );
-      continue;
-    } else if (/^\d+\.\s/.test(line)) {
-      // Нумерованный список
-      const items: string[] = [];
-      let num = 1;
-      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-        items.push(lines[i].trim().replace(/^\d+\.\s+/, ''));
-        i++;
-        num++;
-      }
-      elements.push(
-        <ol key={key++} className="space-y-1.5 my-1">
-          {items.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2">
-              <span className="text-fin-accent font-semibold shrink-0 min-w-[1rem]">{idx + 1}.</span>
-              <span>{parseInline(item)}</span>
-            </li>
-          ))}
-        </ol>
-      );
-      continue;
-    } else {
-      elements.push(<p key={key++} className="leading-snug">{parseInline(line)}</p>);
-    }
-    i++;
-  }
-
-  return <div className="text-sm space-y-0.5">{elements}</div>;
-};
-
 interface ChatTransactionCardProps {
   transaction: Transaction;
   onEdit: () => void;
@@ -711,11 +712,7 @@ const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({ transaction, 
           <span className="text-xs text-fin-textTert">
             {capitalize(format(parseISO(transaction.date), 'd MMM, eee', { locale: ru }))}.
           </span>
-          <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
-            <span className="text-xs font-semibold text-fin-textSec">
-              {transaction.status === 'PLANNED' ? 'П' : 'Ф'}
-            </span>
-          </div>
+          {transaction.status === 'PLANNED' ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-bgSec text-fin-textTert border border-fin-border">П</span> : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-success/10 text-fin-success border border-fin-success/20">Ф</span>}
         </div>
       </div>
     </div>

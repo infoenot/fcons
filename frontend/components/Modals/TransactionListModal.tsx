@@ -180,11 +180,7 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
                           <span className="text-xs text-fin-textTert">
                             {capitalize(format(parseISO(t.date), 'd MMM, eee', { locale: ru }))}.
                           </span>
-                          <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
-                            <span className="text-xs font-semibold text-fin-textSec">
-                              {t.status === 'PLANNED' ? 'П' : 'Ф'}
-                            </span>
-                          </div>
+                          {t.status === 'PLANNED' ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-bgSec text-fin-textTert border border-fin-border">П</span> : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-success/10 text-fin-success border border-fin-success/20">Ф</span>}
                         </div>
                       </div>
                     </div>
@@ -223,11 +219,7 @@ const TransactionListModal: React.FC<TransactionListModalProps> = ({
                       <span className="text-xs text-fin-textTert">
                         {capitalize(format(parseISO(t.date), 'd MMM, eee', { locale: ru }))}.
                       </span>
-                      <div className="w-6 h-6 rounded-full bg-fin-bg flex items-center justify-center border border-fin-border">
-                        <span className="text-xs font-semibold text-fin-textSec">
-                          {t.status === 'PLANNED' ? 'П' : 'Ф'}
-                        </span>
-                      </div>
+                      {t.status === 'PLANNED' ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-bgSec text-fin-textTert border border-fin-border">П</span> : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-fin-success/10 text-fin-success border border-fin-success/20">Ф</span>}
                     </div>
                   </div>
                 </div>
