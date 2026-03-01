@@ -8,6 +8,7 @@ RUN npm install
 
 COPY . .
 
+ARG CACHEBUST=2
 RUN npm run build
 
 FROM nginx:alpine
