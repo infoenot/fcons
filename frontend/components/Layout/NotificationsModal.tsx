@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // v2
 import { useFinance } from '../../context/FinanceContext';
 import { useChat } from '../../context/ChatContext';
 import { Check, Trash2, Edit2, X, Save, AlertCircle } from 'lucide-react';
